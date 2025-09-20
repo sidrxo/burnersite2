@@ -1,0 +1,131 @@
+<!-- templates/core/home.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Burner Management{% endblock %}
+
+{% block content %}
+<div class="hero-section py-5 mb-5" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7));">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="bi bi-fire text-warning me-3"></i>
+                    Experience the Best Events
+                </h1>
+                <p class="lead mb-4">
+                    Discover and book tickets for amazing events in your area. 
+                    From intimate venues to large concerts.
+                </p>
+                {% if not user.is_authenticated %}
+                    <button class="btn btn-primary btn-lg me-3" data-bs-toggle="modal" data-bs-target="#signInModal">
+                        Get Started
+                    </button>
+                {% endif %}
+                <a href="{% url 'events:list' %}" class="btn btn-outline-light btn-lg">
+                    Browse Events
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Welcome Message -->
+    {% if user.is_authenticated %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="glass-card p-4">
+                <h3>Welcome back, {{ user.display_name|default:user.first_name|default:user.email }}!</h3>
+                <p class="mb-0">Ready to discover some amazing events?</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Featured Events -->
+    {% if featured_events %}
+    <section class="mb-5">
+        <h2 class="mb-4">Featured Events</h2>
+        <div class="row">
+            {% for event in featured_events %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card glass-card h-100">
+                    {% if event.image_url %}
+                        <img src="{{ event.image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-calendar-event display-4 text-warning"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ event.name }}</h5>
+                        <p class="card-text text-muted">
+                            <i class="bi bi-geo-alt me-1"></i>{{ event.venue_name }}
+                        </p>
+                        <p class="card-text small">
+                            <i class="bi bi-calendar me-1"></i>{{ event.date|date:"M d, Y" }} at {{ event.date|time:"g:i A" }}
+                        </p>
+                        <p class="card-text small">
+                            <i class="bi bi-ticket me-1"></i>{{ event.tickets_remaining }} tickets left
+                        </p>
+                        <div class="mt-auto d-flex justify-content-between align-items-center">
+                            <span class="h5 mb-0 text-warning">${{ event.price }}</span>
+                            <a href="{% url 'events:detail' event.id %}" class="btn btn-primary btn-sm">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="text-center">
+            <a href="{% url 'events:list' %}" class="btn btn-outline-light">View All Events</a>
+        </div>
+    </section>
+    {% else %}
+    <!-- No events message -->
+    <section class="mb-5">
+        <div class="text-center">
+            <div class="glass-card p-5">
+                <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+                <h3>No Events Yet</h3>
+                <p class="text-muted">Events will appear here once they're added to Firestore.</p>
+                {% if user.is_authenticated and user.is_site_admin %}
+                <p class="text-muted">As a site admin, you can add events through the admin interface.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Stats Section -->
+    <section class="py-5">
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="glass-card p-4">
+                    <i class="bi bi-calendar-event display-4 text-warning mb-3"></i>
+                    <h3>{{ total_events }}</h3>
+                    <p class="text-muted">Active Events</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="glass-card p-4">
+                    <i class="bi bi-building display-4 text-warning mb-3"></i>
+                    <h3>{{ total_venues }}</h3>
+                    <p class="text-muted">Partner Venues</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="glass-card p-4">
+                    <i class="bi bi-people display-4 text-warning mb-3"></i>
+                    <h3>Growing</h3>
+                    <p class="text-muted">Community</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

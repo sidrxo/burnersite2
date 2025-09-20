@@ -1,0 +1,63 @@
+<!-- templates/venues/list.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Venues - Burner Management{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="text-center mb-4">Our Venues</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        {% if venues %}
+            {% for venue in venues %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card glass-card h-100">
+                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 250px;">
+                        <i class="bi bi-building display-4 text-warning"></i>
+                    </div>
+                    
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title">{{ venue.name }}</h5>
+                        
+                        <div class="mb-3">
+                            {% if venue.city %}
+                            <p class="card-text mb-1">
+                                <i class="bi bi-geo-alt me-1 text-warning"></i>
+                                {{ venue.city }}
+                            </p>
+                            {% endif %}
+                            
+                            {% if venue.created_at %}
+                            <p class="card-text mb-1 small text-muted">
+                                <i class="bi bi-calendar me-1"></i>
+                                Created: {{ venue.created_at|date:"M d, Y" }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mt-auto">
+                            <a href="{% url 'venues:detail' venue.id %}" class="btn btn-primary">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="glass-card p-5 text-center">
+                    <i class="bi bi-building-x display-1 text-muted mb-3"></i>
+                    <h3>No Venues Found</h3>
+                    <p class="text-muted">Venues will appear here once they're added to Firestore.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

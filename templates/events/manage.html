@@ -1,0 +1,237 @@
+<!-- templates/events/manage.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Event Management - Burner Management{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="glass-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h2 mb-2">
+                    <i class="bi bi-calendar-event text-warning me-2"></i>
+                    Event Management
+                </h1>
+                <p class="text-muted mb-0">
+                    {% if user.is_site_admin %}
+                        Manage events across all venues
+                    {% else %}
+                        Manage events for your venue
+                    {% endif %}
+                </p>
+            </div>
+            <div>
+                <a href="{% url 'events:create' %}" class="btn btn-warning btn-lg">
+                    <i class="bi bi-plus-circle me-2"></i>Create Event
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="glass-card p-3 text-center">
+                <i class="bi bi-calendar-check display-6 text-primary mb-2"></i>
+                <h3 class="h4 mb-1">{{ stats.total }}</h3>
+                <p class="text-muted mb-0 small">Total Events</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="glass-card p-3 text-center">
+                <i class="bi bi-star-fill display-6 text-warning mb-2"></i>
+                <h3 class="h4 mb-1">{{ stats.featured }}</h3>
+                <p class="text-muted mb-0 small">Featured</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="glass-card p-3 text-center">
+                <i class="bi bi-exclamation-triangle-fill display-6 text-danger mb-2"></i>
+                <h3 class="h4 mb-1">{{ stats.sold_out }}</h3>
+                <p class="text-muted mb-0 small">Sold Out</p>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="glass-card p-3 text-center">
+                <i class="bi bi-building display-6 text-info mb-2"></i>
+                <h3 class="h4 mb-1">
+                    {% if user.is_site_admin %}{{ venues|length }}{% else %}1{% endif %}
+                </h3>
+                <p class="text-muted mb-0 small">Venue{{ venues|length|pluralize }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <form method="get">
+                <input type="text" 
+                       name="search" 
+                       value="{{ search }}" 
+                       placeholder="Search events..." 
+                       class="form-control form-control-lg">
+            </form>
+        </div>
+    </div>
+
+    <!-- Events List -->
+    {% if events %}
+        <div class="row">
+            {% for event in events %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card glass-card h-100">
+                    <!-- Image -->
+                    {% if event.image_url %}
+                        <img src="{{ event.image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-music-note-beamed display-4 text-warning"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="card-body">
+                        <h5 class="card-title">{{ event.name }}</h5>
+                        
+                        {% if event.description %}
+                        <p class="card-text text-muted small mb-3">{{ event.description|truncatewords:15 }}</p>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            {% if event.venue %}
+                            <div class="small mb-1">
+                                <i class="bi bi-geo-alt text-warning me-2"></i>{{ event.venue }}
+                            </div>
+                            {% endif %}
+                            
+                            {% if event.date %}
+                            <div class="small mb-1">
+                                <i class="bi bi-calendar text-warning me-2"></i>{{ event.date|date:"M d, Y H:i" }}
+                            </div>
+                            {% endif %}
+                            
+                            <div class="small mb-1">
+                                <i class="bi bi-currency-pound text-warning me-2"></i>£{{ event.price }}
+                            </div>
+                            
+                            <div class="small mb-1">
+                                <i class="bi bi-people text-warning me-2"></i>{{ event.tickets_sold }}/{{ event.max_tickets }} sold
+                            </div>
+                        </div>
+
+                        <!-- Badges -->
+                        <div class="mb-3">
+                            {% if event.is_featured %}
+                                <span class="badge bg-warning text-dark me-1">Featured</span>
+                            {% endif %}
+                            {% if event.is_sold_out %}
+                                <span class="badge bg-danger">Sold Out</span>
+                            {% elif event.event_status == 'past' %}
+                                <span class="badge bg-secondary">Past</span>
+                            {% else %}
+                                <span class="badge bg-success">Available</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="card-footer bg-transparent">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'events:detail' event.id %}" class="btn btn-outline-light btn-sm flex-fill">
+                                <i class="bi bi-eye me-1"></i>View
+                            </a>
+                            <a href="{% url 'events:edit' event.id %}" class="btn btn-outline-warning btn-sm flex-fill">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </a>
+                            
+                            {% if user.is_site_admin %}
+                            <button class="btn btn-outline-info btn-sm" 
+                                    onclick="toggleFeatured('{{ event.id }}')">
+                                <i class="bi bi-star{% if event.is_featured %}-fill{% endif %}"></i>
+                            </button>
+                            {% endif %}
+                            
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    onclick="deleteEvent('{{ event.id }}', '{{ event.name|escapejs }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="glass-card p-5 text-center">
+            <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
+            <h3>No Events Found</h3>
+            <p class="text-muted mb-4">
+                {% if search %}
+                    No events match your search for "{{ search }}"
+                {% else %}
+                    You haven't created any events yet
+                {% endif %}
+            </p>
+            {% if not search %}
+            <a href="{% url 'events:create' %}" class="btn btn-warning btn-lg">
+                <i class="bi bi-plus-circle me-2"></i>Create Your First Event
+            </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function toggleFeatured(eventId) {
+    fetch(`/events/${eventId}/toggle-featured/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to update featured status');
+        }
+    })
+    .catch(error => {
+        alert('Network error occurred');
+    });
+}
+
+function deleteEvent(eventId, eventName) {
+    if (confirm(`Are you sure you want to delete "${eventName}"? This cannot be undone.`)) {
+        fetch(`/events/${eventId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                alert(data.error || 'Failed to delete event');
+            }
+        })
+        .catch(error => {
+            alert('Network error occurred');
+        });
+    }
+}
+</script>
+{% endblock %}

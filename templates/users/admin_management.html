@@ -1,0 +1,651 @@
+<!-- templates/users/admin_management.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Admin Management - Burner Management{% endblock %}
+
+{% block extra_css %}
+<style>
+.stats-card {
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+}
+
+.user-card {
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+}
+
+.modal-content {
+    background-color: #1a202c;
+    border: 1px solid #4a5568;
+}
+
+.form-control, .form-select {
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    color: white;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: #2d3748;
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+    color: white;
+}
+
+.pagination .page-link {
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    color: white;
+}
+
+.pagination .page-link:hover {
+    background-color: #4a5568;
+    border-color: #ffc107;
+    color: white;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: black;
+}
+
+.dropdown-menu-dark {
+    background-color: #1a202c;
+    border: 1px solid #4a5568;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-1">Admin Management</h1>
+            <p class="text-muted mb-0">Manage venue administrators and sub-administrators</p>
+        </div>
+        <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+            <i class="bi bi-person-plus me-2"></i>Create Admin
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-2 mb-3">
+            <div class="stats-card p-3 text-center">
+                <i class="bi bi-people-fill display-6 text-primary mb-2"></i>
+                <h4>{{ stats.total }}</h4>
+                <small class="text-muted">Total Admins</small>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="stats-card p-3 text-center">
+                <i class="bi bi-shield-check display-6 text-warning mb-2"></i>
+                <h4>{{ stats.site_admins }}</h4>
+                <small class="text-muted">Site Admins</small>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="stats-card p-3 text-center">
+                <i class="bi bi-building display-6 text-info mb-2"></i>
+                <h4>{{ stats.venue_admins }}</h4>
+                <small class="text-muted">Venue Admins</small>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="stats-card p-3 text-center">
+                <i class="bi bi-person-gear display-6 text-success mb-2"></i>
+                <h4>{{ stats.sub_admins }}</h4>
+                <small class="text-muted">Sub Admins</small>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="stats-card p-3 text-center">
+                <i class="bi bi-check-circle display-6 text-success mb-2"></i>
+                <h4>{{ stats.active }}</h4>
+                <small class="text-muted">Active</small>
+            </div>
+        </div>
+        <div class="col-md-2 mb-3">
+            <div class="stats-card p-3 text-center">
+                <i class="bi bi-x-circle display-6 text-danger mb-2"></i>
+                <h4>{{ stats.total|add:"-"|add:stats.active }}</h4>
+                <small class="text-muted">Inactive</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <form method="get">
+                <div class="input-group">
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search admins..." class="form-control">
+                    <input type="hidden" name="role" value="{{ role_filter }}">
+                    <button type="submit" class="btn btn-outline-light">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select" onchange="filterByRole(this.value)">
+                <option value="">All Roles</option>
+                <option value="siteAdmin" {% if role_filter == 'siteAdmin' %}selected{% endif %}>Site Admins</option>
+                <option value="venueAdmin" {% if role_filter == 'venueAdmin' %}selected{% endif %}>Venue Admins</option>
+                <option value="subAdmin" {% if role_filter == 'subAdmin' %}selected{% endif %}>Sub Admins</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button class="btn btn-outline-secondary w-100" onclick="window.location.reload()">
+                <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Admin Users List -->
+    {% if page_obj and page_obj.object_list %}
+        <div class="row">
+            {% for admin_user in page_obj %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card user-card">
+                    <div class="card-body">
+                        <!-- User Info -->
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                <i class="bi bi-person-fill text-light"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ admin_user.displayName|default:admin_user.email|truncatechars:25 }}</h6>
+                                <small class="text-muted">{{ admin_user.email|truncatechars:30 }}</small>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-link text-light p-0" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="editUser('{{ admin_user.uid|escapejs }}', '{{ admin_user.email|escapejs }}', '{{ admin_user.role|escapejs }}', '{{ admin_user.venueId|default:""|escapejs }}')">
+                                        <i class="bi bi-pencil me-2"></i>Edit
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="sendPasswordReset('{{ admin_user.email|escapejs }}')">
+                                        <i class="bi bi-key me-2"></i>Reset Password
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    {% if admin_user.isActive and not admin_user.disabled %}
+                                    <li><a class="dropdown-item text-warning" href="#" onclick="toggleUserStatus('{{ admin_user.uid|escapejs }}', 'deactivate')">
+                                        <i class="bi bi-pause-circle me-2"></i>Deactivate
+                                    </a></li>
+                                    {% else %}
+                                    <li><a class="dropdown-item text-success" href="#" onclick="toggleUserStatus('{{ admin_user.uid|escapejs }}', 'activate')">
+                                        <i class="bi bi-play-circle me-2"></i>Activate
+                                    </a></li>
+                                    {% endif %}
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteUser('{{ admin_user.uid|escapejs }}', '{{ admin_user.email|escapejs }}')">
+                                        <i class="bi bi-trash me-2"></i>Delete
+                                    </a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Role and Status -->
+                        <div class="mb-3">
+                            {% if admin_user.role == 'siteAdmin' %}
+                                <span class="badge bg-warning text-dark me-1">Site Admin</span>
+                            {% elif admin_user.role == 'venueAdmin' %}
+                                <span class="badge bg-info me-1">Venue Admin</span>
+                            {% elif admin_user.role == 'subAdmin' %}
+                                <span class="badge bg-success me-1">Sub Admin</span>
+                            {% endif %}
+
+                            {% if admin_user.isActive and not admin_user.disabled %}
+                                <span class="badge bg-success">Active</span>
+                            {% elif admin_user.disabled %}
+                                <span class="badge bg-secondary">Disabled</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inactive</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Details -->
+                        <div class="mb-3 small">
+                            {% if admin_user.venueId %}
+                                {% for venue in venues %}
+                                    {% if venue.id == admin_user.venueId %}
+                                    <div class="mb-1">
+                                        <i class="bi bi-geo-alt text-warning me-2"></i>{{ venue.name }}
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            
+                            {% if admin_user.createdAt %}
+                            <div class="mb-1">
+                                <i class="bi bi-calendar text-warning me-2"></i>Created {{ admin_user.createdAt|date:"M d, Y" }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-light btn-sm flex-fill" onclick="editUser('{{ admin_user.uid|escapejs }}', '{{ admin_user.email|escapejs }}', '{{ admin_user.role|escapejs }}', '{{ admin_user.venueId|default:""|escapejs }}')">
+                                <i class="bi bi-pencil me-1"></i>Edit
+                            </button>
+                            {% if admin_user.isActive and not admin_user.disabled %}
+                            <button class="btn btn-outline-warning btn-sm" onclick="toggleUserStatus('{{ admin_user.uid|escapejs }}', 'deactivate')">
+                                <i class="bi bi-pause-circle"></i>
+                            </button>
+                            {% else %}
+                            <button class="btn btn-outline-success btn-sm" onclick="toggleUserStatus('{{ admin_user.uid|escapejs }}', 'activate')">
+                                <i class="bi bi-play-circle"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">Previous</a>
+                    </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}">Last</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% elif search or role_filter %}
+        <div class="text-center py-5">
+            <i class="bi bi-search display-1 text-muted mb-3"></i>
+            <h3>No Results Found</h3>
+            <p class="text-muted">No admin users match your search criteria.</p>
+            <a href="{% url 'users:admin_management' %}" class="btn btn-outline-light">Clear Filters</a>
+        </div>
+
+    {% elif page_obj is None %}
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-triangle display-1 text-danger mb-3"></i>
+            <h3>Connection Error</h3>
+            <p class="text-muted">Unable to load admin users. Please check your Firebase configuration.</p>
+            <button class="btn btn-warning" onclick="window.location.reload()">Retry</button>
+        </div>
+
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-person-plus display-1 text-muted mb-3"></i>
+            <h3>No Admin Users</h3>
+            <p class="text-muted">Create your first admin user to get started.</p>
+            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#createAdminModal">
+                <i class="bi bi-person-plus me-2"></i>Create First Admin
+            </button>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Create Admin Modal -->
+<div class="modal fade" id="createAdminModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Create New Admin</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createAdminForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                            <input type="email" name="email" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Display Name</label>
+                            <input type="text" name="display_name" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Password <span class="text-danger">*</span></label>
+                            <input type="password" name="password" class="form-control" minlength="6" required>
+                            <small class="form-text text-muted">Minimum 6 characters</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role <span class="text-danger">*</span></label>
+                            <select name="role" class="form-select" required onchange="toggleVenueField(this.value)">
+                                <option value="">Select Role</option>
+                                <option value="siteAdmin">Site Admin</option>
+                                <option value="venueAdmin">Venue Admin</option>
+                                <option value="subAdmin">Sub Admin</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="venueField" style="display: none;">
+                        <label class="form-label">Venue <span class="text-danger">*</span></label>
+                        <select name="venue_id" class="form-select">
+                            <option value="">Select Venue</option>
+                            {% for venue in venues %}
+                            <option value="{{ venue.id }}">{{ venue.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="createAdmin()">Create Admin</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Admin Modal -->
+<div class="modal fade" id="editAdminModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Edit Admin User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAdminForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="uid" id="editUid">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="editEmail" class="form-control" readonly>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role <span class="text-danger">*</span></label>
+                            <select name="role" id="editRole" class="form-select" required onchange="toggleEditVenueField(this.value)">
+                                <option value="siteAdmin">Site Admin</option>
+                                <option value="venueAdmin">Venue Admin</option>
+                                <option value="subAdmin">Sub Admin</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3" id="editVenueField">
+                            <label class="form-label">Venue</label>
+                            <select name="venue_id" id="editVenueId" class="form-select">
+                                <option value="">Select Venue</option>
+                                {% for venue in venues %}
+                                <option value="{{ venue.id }}">{{ venue.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" onclick="updateAdmin()">Update Admin</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title text-danger">Delete Admin User</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to permanently delete this admin user?</p>
+                <p><strong id="deleteUserEmail"></strong></p>
+                <div class="alert alert-danger">
+                    This action cannot be undone. Type <strong>DELETE</strong> to confirm:
+                </div>
+                <input type="text" id="deleteConfirmation" class="form-control" placeholder="DELETE">
+                <input type="hidden" id="deleteUid">
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()" id="deleteButton" disabled>Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function filterByRole(role) {
+    const url = new URL(window.location);
+    if (role) {
+        url.searchParams.set('role', role);
+    } else {
+        url.searchParams.delete('role');
+    }
+    url.searchParams.delete('page');
+    window.location = url;
+}
+
+function toggleVenueField(role) {
+    const venueField = document.getElementById('venueField');
+    const venueSelect = venueField.querySelector('select');
+    
+    if (role === 'venueAdmin' || role === 'subAdmin') {
+        venueField.style.display = 'block';
+        venueSelect.required = true;
+    } else {
+        venueField.style.display = 'none';
+        venueSelect.required = false;
+        venueSelect.value = '';
+    }
+}
+
+function toggleEditVenueField(role) {
+    const venueField = document.getElementById('editVenueField');
+    const venueSelect = document.getElementById('editVenueId');
+    
+    if (role === 'venueAdmin' || role === 'subAdmin') {
+        venueField.style.display = 'block';
+        venueSelect.required = true;
+    } else {
+        venueField.style.display = 'none';
+        venueSelect.required = false;
+        venueSelect.value = '';
+    }
+}
+
+function createAdmin() {
+    const form = document.getElementById('createAdminForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "users:create_admin" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to create admin');
+        }
+    })
+    .catch(error => {
+        alert('Network error occurred');
+    });
+}
+
+function editUser(uid, email, role, venueId) {
+    document.getElementById('editUid').value = uid;
+    document.getElementById('editEmail').value = email;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editVenueId').value = venueId || '';
+    
+    toggleEditVenueField(role);
+    new bootstrap.Modal(document.getElementById('editAdminModal')).show();
+}
+
+function updateAdmin() {
+    const form = document.getElementById('editAdminForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "users:update_admin" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to update admin');
+        }
+    })
+    .catch(error => {
+        alert('Network error occurred');
+    });
+}
+
+function toggleUserStatus(uid, action) {
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+    
+    const formData = new FormData();
+    formData.append('uid', uid);
+    formData.append('action', action);
+    
+    fetch('{% url "users:toggle_status" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to update status');
+        }
+    })
+    .catch(error => {
+        alert('Network error occurred');
+    });
+}
+
+function deleteUser(uid, email) {
+    document.getElementById('deleteUid').value = uid;
+    document.getElementById('deleteUserEmail').textContent = email;
+    document.getElementById('deleteConfirmation').value = '';
+    document.getElementById('deleteButton').disabled = true;
+    
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function confirmDelete() {
+    const uid = document.getElementById('deleteUid').value;
+    const confirmation = document.getElementById('deleteConfirmation').value;
+    
+    if (confirmation !== 'DELETE') {
+        alert('Please type DELETE to confirm');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('uid', uid);
+    formData.append('confirm', confirmation);
+    
+    fetch('{% url "users:delete_admin" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.error || 'Failed to delete user');
+        }
+    })
+    .catch(error => {
+        alert('Network error occurred');
+    });
+}
+
+function sendPasswordReset(email) {
+    if (!confirm(`Send password reset email to ${email}?`)) return;
+    
+    const formData = new FormData();
+    formData.append('email', email);
+    
+    fetch('{% url "users:reset_password" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+        } else {
+            alert(data.error || 'Failed to send reset email');
+        }
+    })
+    .catch(error => {
+        alert('Network error occurred');
+    });
+}
+
+// Enable delete button when DELETE is typed
+document.getElementById('deleteConfirmation').addEventListener('input', function() {
+    document.getElementById('deleteButton').disabled = this.value !== 'DELETE';
+});
+
+// Clear form when modal closes
+document.getElementById('createAdminModal').addEventListener('hidden.bs.modal', function() {
+    document.getElementById('createAdminForm').reset();
+    document.getElementById('venueField').style.display = 'none';
+});
+</script>
+{% endblock %}

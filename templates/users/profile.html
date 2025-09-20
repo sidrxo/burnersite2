@@ -1,0 +1,23 @@
+<!-- templates/users/profile.html -->
+{% extends 'base.html' %}
+
+{% block title %}Profile - Burner Management{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="glass-card p-4">
+                <h2>User Profile</h2>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Display Name:</strong> {{ user.display_name|default:"Not set" }}</p>
+                <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+                <p><strong>Member since:</strong> {{ user.date_joined|date:"M d, Y" }}</p>
+                
+                <a href="{% url 'account_email' %}" class="btn btn-primary">Manage Email</a>
+                <a href="{% url 'account_change_password' %}" class="btn btn-outline-light">Change Password</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
