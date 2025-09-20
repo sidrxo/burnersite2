@@ -97,16 +97,21 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'users.User'
 SITE_ID = 1
 
-# Django Allauth settings (updated to new format)
+# Authentication backends - Firebase first, then Django fallback
 AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'allauth.account.auth_backends.AuthenticationBackend',
+    'burnermanagement.firebase_auth.FirebaseAuthenticationBackend',  # Firebase auth (priority)
+    'allauth.account.auth_backends.AuthenticationBackend',  # Allauth for regular users
+    'django.contrib.auth.backends.ModelBackend',  # Django fallback
 ]
 
-# Updated allauth settings to fix deprecation warnings
-ACCOUNT_LOGIN_METHODS = ['email']
-ACCOUNT_SIGNUP_FIELDS = ['email', 'password1', 'password2']
+# Django Allauth settings (updated to fix deprecation warnings)
+ACCOUNT_AUTHENTICATION_METHOD = 'email'  # Changed from ACCOUNT_LOGIN_METHODS
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_EMAIL_VERIFICATION = 'optional'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGOUT_ON_GET = False  # Security: require POST for logout
+
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
@@ -138,13 +143,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # Firebase Configuration
 FIREBASE_SERVICE_ACCOUNT_KEY = os.path.join(BASE_DIR, 'burner-34556-firebase-adminsdk-fbsvc-16f8bd0d99.json')
 
-# Add this to your burnermanagement/settings.py
-
-# Authentication backends - add Firebase support
-AUTHENTICATION_BACKENDS = [
-    'burnermanagement.firebase_auth.FirebaseAuthenticationBackend',  # Firebase auth
-    'django.contrib.auth.backends.ModelBackend',  # Django fallback
-]
+# Custom setting to enable Firebase migration
+ENABLE_FIREBASE_USER_MIGRATION = True
 
 # Logging configuration for better debugging
 LOGGING = {

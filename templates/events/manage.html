@@ -7,11 +7,11 @@
 {% block content %}
 <div class="container py-4">
     <!-- Header -->
-    <div class="glass-card p-4 mb-4">
+    <div class="card bg-dark border-secondary p-4 mb-4">
         <div class="d-flex justify-content-between align-items-start">
             <div>
                 <h1 class="h2 mb-2">
-                    <i class="bi bi-calendar-event text-warning me-2"></i>
+                    <i class="bi bi-calendar-event text-primary me-2"></i>
                     Event Management
                 </h1>
                 <p class="text-muted mb-0">
@@ -23,7 +23,7 @@
                 </p>
             </div>
             <div>
-                <a href="{% url 'events:create' %}" class="btn btn-warning btn-lg">
+                <a href="{% url 'events:create' %}" class="btn btn-primary btn-lg">
                     <i class="bi bi-plus-circle me-2"></i>Create Event
                 </a>
             </div>
@@ -33,28 +33,28 @@
     <!-- Stats -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
-            <div class="glass-card p-3 text-center">
+            <div class="card bg-dark border-secondary p-3 text-center">
                 <i class="bi bi-calendar-check display-6 text-primary mb-2"></i>
                 <h3 class="h4 mb-1">{{ stats.total }}</h3>
                 <p class="text-muted mb-0 small">Total Events</p>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="glass-card p-3 text-center">
-                <i class="bi bi-star-fill display-6 text-warning mb-2"></i>
+            <div class="card bg-dark border-secondary p-3 text-center">
+                <i class="bi bi-star-fill display-6 text-secondary mb-2"></i>
                 <h3 class="h4 mb-1">{{ stats.featured }}</h3>
                 <p class="text-muted mb-0 small">Featured</p>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="glass-card p-3 text-center">
+            <div class="card bg-dark border-secondary p-3 text-center">
                 <i class="bi bi-exclamation-triangle-fill display-6 text-danger mb-2"></i>
                 <h3 class="h4 mb-1">{{ stats.sold_out }}</h3>
                 <p class="text-muted mb-0 small">Sold Out</p>
             </div>
         </div>
         <div class="col-md-3 mb-3">
-            <div class="glass-card p-3 text-center">
+            <div class="card bg-dark border-secondary p-3 text-center">
                 <i class="bi bi-building display-6 text-info mb-2"></i>
                 <h3 class="h4 mb-1">
                     {% if user.is_site_admin %}{{ venues|length }}{% else %}1{% endif %}
@@ -82,13 +82,13 @@
         <div class="row">
             {% for event in events %}
             <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card glass-card h-100">
+                <div class="card bg-dark border-secondary h-100">
                     <!-- Image -->
                     {% if event.image_url %}
                         <img src="{{ event.image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
                     {% else %}
                         <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
-                            <i class="bi bi-music-note-beamed display-4 text-warning"></i>
+                            <i class="bi bi-music-note-beamed display-4 text-light"></i>
                         </div>
                     {% endif %}
                     
@@ -102,29 +102,29 @@
                         <div class="mb-3">
                             {% if event.venue %}
                             <div class="small mb-1">
-                                <i class="bi bi-geo-alt text-warning me-2"></i>{{ event.venue }}
+                                <i class="bi bi-geo-alt text-primary me-2"></i>{{ event.venue }}
                             </div>
                             {% endif %}
                             
                             {% if event.date %}
                             <div class="small mb-1">
-                                <i class="bi bi-calendar text-warning me-2"></i>{{ event.date|date:"M d, Y H:i" }}
+                                <i class="bi bi-calendar text-primary me-2"></i>{{ event.date|date:"M d, Y H:i" }}
                             </div>
                             {% endif %}
                             
                             <div class="small mb-1">
-                                <i class="bi bi-currency-pound text-warning me-2"></i>£{{ event.price }}
+                                <i class="bi bi-currency-pound text-primary me-2"></i>£{{ event.price }}
                             </div>
                             
                             <div class="small mb-1">
-                                <i class="bi bi-people text-warning me-2"></i>{{ event.tickets_sold }}/{{ event.max_tickets }} sold
+                                <i class="bi bi-people text-primary me-2"></i>{{ event.tickets_sold }}/{{ event.max_tickets }} sold
                             </div>
                         </div>
 
                         <!-- Badges -->
                         <div class="mb-3">
                             {% if event.is_featured %}
-                                <span class="badge bg-warning text-dark me-1">Featured</span>
+                                <span class="badge bg-secondary text-light me-1">Featured</span>
                             {% endif %}
                             {% if event.is_sold_out %}
                                 <span class="badge bg-danger">Sold Out</span>
@@ -142,7 +142,7 @@
                             <a href="{% url 'events:detail' event.id %}" class="btn btn-outline-light btn-sm flex-fill">
                                 <i class="bi bi-eye me-1"></i>View
                             </a>
-                            <a href="{% url 'events:edit' event.id %}" class="btn btn-outline-warning btn-sm flex-fill">
+                            <a href="{% url 'events:edit' event.id %}" class="btn btn-outline-secondary btn-sm flex-fill">
                                 <i class="bi bi-pencil me-1"></i>Edit
                             </a>
                             
@@ -164,7 +164,7 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="glass-card p-5 text-center">
+        <div class="card bg-dark border-secondary p-5 text-center">
             <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
             <h3>No Events Found</h3>
             <p class="text-muted mb-4">
@@ -175,7 +175,7 @@
                 {% endif %}
             </p>
             {% if not search %}
-            <a href="{% url 'events:create' %}" class="btn btn-warning btn-lg">
+            <a href="{% url 'events:create' %}" class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle me-2"></i>Create Your First Event
             </a>
             {% endif %}

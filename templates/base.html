@@ -19,7 +19,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary">
         <div class="container">
             <a class="navbar-brand fw-bold" href="{% url 'core:home' %}">
-                <i class="bi bi-fire text-warning me-2"></i>Burner
+                <i class="bi bi-ticket-detailed text-light me-2"></i>Burner
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -67,9 +67,9 @@
                             <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                                 <i class="bi bi-person-circle me-1"></i>{{ user.display_name|default:user.email }}
                                 {% if user.is_site_admin %}
-                                    <span class="badge bg-warning text-dark ms-1">Admin</span>
+                                    <span class="badge bg-secondary text-light ms-1">Admin</span>
                                 {% elif user.is_venue_admin %}
-                                    <span class="badge bg-info text-dark ms-1">Venue Admin</span>
+                                    <span class="badge bg-info text-light ms-1">Venue Admin</span>
                                 {% elif user.is_sub_admin %}
                                     <span class="badge bg-secondary ms-1">Sub Admin</span>
                                 {% endif %}

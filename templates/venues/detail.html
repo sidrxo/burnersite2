@@ -1,3 +1,4 @@
+
 <!-- templates/venues/detail.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -9,16 +10,16 @@
     <div class="row">
         <div class="col-lg-6 mb-4">
             <div class="bg-secondary rounded d-flex align-items-center justify-content-center" style="height: 400px;">
-                <i class="bi bi-building display-1 text-warning"></i>
+                <i class="bi bi-building display-1 text-primary"></i>
             </div>
         </div>
         
         <div class="col-lg-6">
-            <div class="glass-card p-4 h-100">
+            <div class="card bg-dark border-secondary p-4 h-100">
                 <h1 class="mb-3">{{ venue.name }}</h1>
                 
                 <div class="mb-4">
-                    <h5 class="text-warning mb-3">Venue Details</h5>
+                    <h5 class="text-primary mb-3">Venue Details</h5>
                     
                     {% if venue.city %}
                     <div class="row mb-2">

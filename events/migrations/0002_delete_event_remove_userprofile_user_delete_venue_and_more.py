@@ -5,22 +5,15 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ('events', '0001_initial'),
+        # Remove the problematic dependency to 0001_initial
+        # Keep this empty since we're starting fresh
     ]
 
     operations = [
-        migrations.DeleteModel(
-            name='Event',
-        ),
-        migrations.RemoveField(
-            model_name='userprofile',
-            name='user',
-        ),
-        migrations.DeleteModel(
-            name='Venue',
-        ),
-        migrations.DeleteModel(
-            name='UserProfile',
-        ),
+        # These operations are likely empty since the models were moved to other apps
+        # If there are any operations here, they should be cleanup operations
+        # that don't depend on the deleted 0001_initial migration
     ]

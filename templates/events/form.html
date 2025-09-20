@@ -15,7 +15,7 @@
         </a>
         <div>
             <h1 class="h2 mb-1">
-                <i class="bi bi-{% if is_edit %}pencil{% else %}plus-circle{% endif %} text-warning me-2"></i>
+                <i class="bi bi-{% if is_edit %}pencil{% else %}plus-circle{% endif %} text-primary me-2"></i>
                 {% if is_edit %}Edit Event{% else %}Create New Event{% endif %}
             </h1>
             <p class="text-muted mb-0">
@@ -34,7 +34,7 @@
                 {% csrf_token %}
                 
                 <!-- Basic Information -->
-                <div class="glass-card p-4 mb-4">
+                <div class="card bg-dark border-secondary p-4 mb-4">
                     <h3 class="h5 mb-3">
                         <i class="bi bi-info-circle me-2"></i>Basic Information
                     </h3>
@@ -92,7 +92,7 @@
                 </div>
 
                 <!-- Date & Time -->
-                <div class="glass-card p-4 mb-4">
+                <div class="card bg-dark border-secondary p-4 mb-4">
                     <h3 class="h5 mb-3">
                         <i class="bi bi-calendar me-2"></i>Date & Time
                     </h3>
@@ -111,7 +111,7 @@
                 </div>
 
                 <!-- Pricing & Capacity -->
-                <div class="glass-card p-4 mb-4">
+                <div class="card bg-dark border-secondary p-4 mb-4">
                     <h3 class="h5 mb-3">
                         <i class="bi bi-ticket me-2"></i>Pricing & Capacity
                     </h3>
@@ -145,7 +145,7 @@
 
                 <!-- Additional Options -->
                 {% if user.is_site_admin %}
-                <div class="glass-card p-4 mb-4">
+                <div class="card bg-dark border-secondary p-4 mb-4">
                     <h3 class="h5 mb-3">
                         <i class="bi bi-gear me-2"></i>Additional Options
                     </h3>
@@ -154,7 +154,7 @@
                         <div class="form-check">
                             {{ form.is_featured }}
                             <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
-                                <i class="bi bi-star text-warning me-1"></i>
+                                <i class="bi bi-star text-secondary me-1"></i>
                                 Mark as featured event
                             </label>
                         </div>
@@ -167,7 +167,7 @@
 
                 <!-- Form Actions -->
                 <div class="d-flex gap-3 pt-3">
-                    <button type="submit" class="btn btn-warning btn-lg">
+                    <button type="submit" class="btn btn-primary btn-lg">
                         <i class="bi bi-{% if is_edit %}check-circle{% else %}plus-circle{% endif %} me-2"></i>
                         {% if is_edit %}Update Event{% else %}Create Event{% endif %}
                     </button>
@@ -180,13 +180,13 @@
         
         <!-- Preview Section -->
         <div class="col-lg-4">
-            <div class="glass-card p-4 sticky-top" style="top: 2rem;">
+            <div class="card bg-dark border-secondary p-4 sticky-top" style="top: 2rem;">
                 <h4 class="mb-3">
                     <i class="bi bi-eye me-2"></i>Preview
                 </h4>
                 
-                <div class="card glass-card">
-                    <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 150px;">
+                <div class="card bg-secondary border-secondary">
+                    <div class="card-img-top bg-dark d-flex align-items-center justify-content-center" style="height: 150px;">
                         <i class="bi bi-image display-4 text-muted"></i>
                     </div>
                     
@@ -199,7 +199,7 @@
                         </p>
                         
                         <div class="mb-2">
-                            <i class="bi bi-geo-alt text-warning me-2"></i>
+                            <i class="bi bi-geo-alt text-primary me-2"></i>
                             <span id="previewVenue">
                                 {% if is_edit %}
                                     {{ event.venue }}
@@ -212,7 +212,7 @@
                         </div>
                         
                         <div class="mb-2">
-                            <i class="bi bi-calendar text-warning me-2"></i>
+                            <i class="bi bi-calendar text-primary me-2"></i>
                             <span id="previewDate">
                                 {% if is_edit and event.date %}
                                     {{ event.date|date:"M d, Y H:i" }}
@@ -223,14 +223,14 @@
                         </div>
                         
                         <div class="mb-2">
-                            <i class="bi bi-currency-pound text-warning me-2"></i>
+                            <i class="bi bi-currency-pound text-primary me-2"></i>
                             <span id="previewPrice">
                                 £{% if is_edit %}{{ event.price }}{% else %}0.00{% endif %}
                             </span>
                         </div>
                         
                         <div class="mb-2">
-                            <i class="bi bi-people text-warning me-2"></i>
+                            <i class="bi bi-people text-primary me-2"></i>
                             <span id="previewCapacity">
                                 {% if is_edit %}{{ event.max_tickets }}{% else %}0{% endif %} tickets available
                             </span>

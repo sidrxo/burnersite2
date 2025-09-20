@@ -7,6 +7,9 @@ app_name = 'users'
 urlpatterns = [
     path('profile/', views.ProfileView.as_view(), name='profile'),
     
+    # Firebase authentication
+    path('firebase-login/', views.firebase_login, name='firebase_login'),
+    
     # Admin management (site admins only)
     path('admin/', views.admin_management, name='admin_management'),
     path('admin/create/', views.create_admin_user, name='create_admin'),

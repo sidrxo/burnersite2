@@ -81,7 +81,7 @@ def admin_management(request):
 @login_required
 @require_http_methods(["POST"])
 def create_admin_user(request):
-    """Create new admin user via web interface"""
+    """Create new admin user with unified Firebase/Django integration"""
     if not request.user.is_site_admin():
         return JsonResponse({'error': 'Permission denied'}, status=403)
     
@@ -90,6 +90,7 @@ def create_admin_user(request):
         role = request.POST.get('role')
         venue_id = request.POST.get('venue_id', '').strip()
         display_name = request.POST.get('display_name', '').strip()
+        password = request.POST.get('password', '').strip()
         
         # Validation
         if not all([email, role]):
@@ -101,6 +102,9 @@ def create_admin_user(request):
         if role in ['venueAdmin', 'subAdmin'] and not venue_id:
             return JsonResponse({'error': 'Venue is required for venue admins and sub admins'}, status=400)
         
+        if not password or len(password) < 6:
+            return JsonResponse({'error': 'Password must be at least 6 characters'}, status=400)
+        
         # Validate venue exists
         if venue_id:
             venue = Venue.get_by_id(venue_id)
@@ -108,19 +112,21 @@ def create_admin_user(request):
                 return JsonResponse({'error': 'Selected venue does not exist'}, status=400)
         
         manager = FirebaseAdminManager()
-        uid = manager.create_admin_user(
+        result = manager.create_admin_user(
             email=email,
             role=role,
             venue_id=venue_id if venue_id else None,
-            display_name=display_name if display_name else None
+            display_name=display_name if display_name else None,
+            password=password
         )
         
         logger.info(f"Site admin {request.user.email} created new {role}: {email}")
         
         return JsonResponse({
             'success': True,
-            'message': f'Successfully created {role}: {email}. Password setup email sent.',
-            'uid': uid
+            'message': f'Successfully created {role}: {email}. They can now sign in with their password.',
+            'uid': result['uid'],
+            'email': result['email']
         })
         
     except ValueError as e:
@@ -275,3 +281,43 @@ def send_password_reset(request):
     except Exception as e:
         logger.error(f"Error sending password reset: {e}")
         return JsonResponse({'error': 'Failed to send password reset'}, status=500)
+    
+    # Add this to users/views.py
+
+import json
+from django.contrib.auth import login
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["POST"])
+def firebase_login(request):
+    """Handle Firebase authentication token"""
+    try:
+        data = json.loads(request.body)
+        id_token = data.get('id_token')
+        
+        if not id_token:
+            return JsonResponse({'error': 'No token provided'}, status=400)
+        
+        # Authenticate using Firebase token
+        from django.contrib.auth import authenticate
+        user = authenticate(request, firebase_token=id_token)
+        
+        if user:
+            login(request, user)
+            return JsonResponse({
+                'success': True,
+                'redirect_url': '/',
+                'user': {
+                    'email': user.email,
+                    'display_name': user.display_name,
+                    'role': user.role
+                }
+            })
+        else:
+            return JsonResponse({'error': 'Authentication failed'}, status=401)
+            
+    except Exception as e:
+        logger.error(f"Firebase login error: {e}")
+        return JsonResponse({'error': 'Server error'}, status=500)

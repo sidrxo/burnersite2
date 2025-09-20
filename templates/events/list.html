@@ -1,3 +1,4 @@
+
 <!-- templates/events/list.html -->
 {% extends 'base.html' %}
 {% load static %}
@@ -16,12 +17,12 @@
         {% if events %}
             {% for event in events %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card glass-card h-100">
+                <div class="card bg-dark border-secondary h-100">
                     {% if event.image_url %}
                         <img src="{{ event.image_url }}" class="card-img-top" style="height: 250px; object-fit: cover;">
                     {% else %}
                         <div class="card-img-top bg-dark d-flex align-items-center justify-content-center" style="height: 250px;">
-                            <i class="bi bi-music-note-beamed display-4 text-warning"></i>
+                            <i class="bi bi-music-note-beamed display-4 text-primary"></i>
                         </div>
                     {% endif %}
                     
@@ -37,30 +38,30 @@
                         <div class="mb-3">
                             {% if event.venue %}
                             <p class="card-text mb-1">
-                                <i class="bi bi-geo-alt me-1 text-warning"></i>
+                                <i class="bi bi-geo-alt me-1 text-primary"></i>
                                 {{ event.venue }}
                             </p>
                             {% endif %}
                             
                             {% if event.date %}
                             <p class="card-text mb-1">
-                                <i class="bi bi-calendar me-1 text-warning"></i>
+                                <i class="bi bi-calendar me-1 text-primary"></i>
                                 {{ event.date|date:"M d, Y" }} at {{ event.date|time:"H:i" }}
                             </p>
                             {% endif %}
                             
                             <p class="card-text mb-1">
-                                <i class="bi bi-currency-pound me-1 text-warning"></i>
+                                <i class="bi bi-currency-pound me-1 text-primary"></i>
                                 £{{ event.price }}
                             </p>
                             
                             <p class="card-text mb-1">
-                                <i class="bi bi-people me-1 text-warning"></i>
+                                <i class="bi bi-people me-1 text-primary"></i>
                                 {{ event.tickets_sold }}/{{ event.max_tickets }} tickets sold
                             </p>
                             
                             {% if event.is_featured %}
-                            <span class="badge bg-warning text-dark">Featured</span>
+                            <span class="badge bg-secondary text-light">Featured</span>
                             {% endif %}
                         </div>
                         
@@ -79,7 +80,7 @@
             {% endfor %}
         {% else %}
             <div class="col-12">
-                <div class="glass-card p-5 text-center">
+                <div class="card bg-dark border-secondary p-5 text-center">
                     <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
                     <h3>No Events Found</h3>
                     <p class="text-muted">Check back soon for upcoming events!</p>
@@ -89,3 +90,4 @@
     </div>
 </div>
 {% endblock %}
+
