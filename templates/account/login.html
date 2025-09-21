@@ -1,0 +1,280 @@
+<!-- templates/account/login.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In - Burner Management{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card bg-dark border-secondary shadow-lg">
+                <div class="card-header bg-secondary border-secondary text-center py-4">
+                    <i class="bi bi-person-circle display-4 text-light mb-3"></i>
+                    <h2 class="h3 mb-0 text-light">Sign In</h2>
+                </div>
+                
+                <div class="card-body p-4">
+                    <!-- Display any form errors -->
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <!-- Email/Password Login Form -->
+                    <form method="post" action="{% url 'account_login' %}" id="loginForm">
+                        {% csrf_token %}
+                        
+                        <!-- Email Field -->
+                        <div class="mb-3">
+                            <label for="{{ form.login.id_for_label }}" class="form-label">
+                                Email Address <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary border-secondary text-light">
+                                    <i class="bi bi-envelope"></i>
+                                </span>
+                                <input type="email" 
+                                       name="{{ form.login.name }}" 
+                                       id="{{ form.login.id_for_label }}"
+                                       class="form-control {% if form.login.errors %}is-invalid{% endif %}"
+                                       placeholder="your.email@example.com"
+                                       value="{{ form.login.value|default:'' }}"
+                                       required>
+                            </div>
+                            {% if form.login.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.login.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Password Field -->
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                Password <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-secondary border-secondary text-light">
+                                    <i class="bi bi-lock"></i>
+                                </span>
+                                <input type="password" 
+                                       name="{{ form.password.name }}" 
+                                       id="{{ form.password.id_for_label }}"
+                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                       placeholder="Enter your password"
+                                       required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
+                                    <i class="bi bi-eye" id="passwordToggle"></i>
+                                </button>
+                            </div>
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.password.errors.0 }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Remember Me -->
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       name="{{ form.remember.name }}" 
+                                       id="{{ form.remember.id_for_label }}"
+                                       class="form-check-input"
+                                       {% if form.remember.value %}checked{% endif %}>
+                                <label class="form-check-label" for="{{ form.remember.id_for_label }}">
+                                    Keep me signed in
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden redirect field -->
+                        {% if redirect_field_value %}
+                            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                        {% endif %}
+                        
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-3 mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>
+                                Sign In
+                            </button>
+                        </div>
+                    </form>
+                    
+                                            <!-- Alternative Actions -->
+                    <div class="text-center">
+                        <a href="{% url 'account_reset_password' %}" class="btn btn-link text-light">
+                            Forgot Password?
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent border-secondary text-center py-3">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check me-1"></i>
+                        Your credentials are secure and encrypted
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Firebase Integration -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+<script>
+// Initialize Firebase (you'll need to add your config)
+const firebaseConfig = {
+    // Add your Firebase config here
+    // This should match the config from your Firebase project settings
+};
+
+// Only initialize if config is provided
+if (firebaseConfig.apiKey) {
+    firebase.initializeApp(firebaseConfig);
+    
+    // Override form submission to try Firebase first
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('{{ form.login.id_for_label }}').value;
+        const password = document.getElementById('{{ form.password.id_for_label }}').value;
+        
+        if (!email || !password) {
+            // Let Django handle validation
+            this.submit();
+            return;
+        }
+        
+        try {
+            // Try Firebase authentication first
+            const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+            const idToken = await userCredential.user.getIdToken();
+            
+            // Send token to Django for session creation
+            const response = await fetch('{% url "users:firebase_login" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ id_token: idToken })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                window.location.href = data.redirect_url || '{% url "core:home" %}';
+            } else {
+                throw new Error(data.error || 'Firebase authentication failed');
+            }
+            
+        } catch (error) {
+            console.log('Firebase auth failed, falling back to Django:', error.message);
+            // Fall back to Django authentication
+            this.submit();
+        }
+    });
+}
+
+function togglePassword() {
+    const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+    const toggle = document.getElementById('passwordToggle');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggle.className = 'bi bi-eye-slash';
+    } else {
+        passwordInput.type = 'password';
+        toggle.className = 'bi bi-eye';
+    }
+}
+
+// Add loading state to submit button
+document.getElementById('loginForm').addEventListener('submit', function() {
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Signing In...';
+});
+</script>
+
+<style>
+.card {
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3) !important;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
+    border: none;
+    box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0b5ed7 0%, #0a58ca 100%);
+    box-shadow: 0 6px 20px rgba(13, 110, 253, 0.4);
+}
+
+.input-group-text {
+    background-color: #2d3748;
+    border-color: #4a5568;
+    color: white;
+}
+
+.form-control {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.form-control:focus {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+    color: white;
+}
+
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-link {
+    color: #8b9dc3 !important;
+    text-decoration: none;
+}
+
+.btn-link:hover {
+    color: #fff !important;
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

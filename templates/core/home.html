@@ -17,13 +17,8 @@
                     Discover and book tickets for amazing events in your area. 
                     From intimate venues to large concerts.
                 </p>
-                {% if not user.is_authenticated %}
-                    <button class="btn btn-primary btn-lg me-3" data-bs-toggle="modal" data-bs-target="#signInModal">
-                        Get Started
-                    </button>
-                {% endif %}
-                <a href="{% url 'events:list' %}" class="btn btn-outline-light btn-lg">
-                    Browse Events
+                <a href="{% url 'events:list' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-calendar-event me-2"></i>Browse Events
                 </a>
             </div>
         </div>
@@ -35,9 +30,39 @@
     {% if user.is_authenticated %}
     <div class="row mb-5">
         <div class="col-12">
-            <div class="glass-card p-4">
+            <div class="card bg-dark border-secondary p-4">
                 <h3>Welcome back, {{ user.display_name|default:user.first_name|default:user.email }}!</h3>
                 <p class="mb-0">Ready to discover some amazing events?</p>
+                
+                {% if user.is_site_admin %}
+                <div class="mt-3">
+                    <a href="{% url 'users:admin_management' %}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-people me-1"></i>Manage Users
+                    </a>
+                    <a href="{% url 'events:manage' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-calendar me-1"></i>Manage Events
+                    </a>
+                </div>
+                {% elif user.is_venue_admin or user.is_sub_admin %}
+                <div class="mt-3">
+                    <a href="{% url 'events:manage' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-calendar me-1"></i>Manage Events
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Not authenticated - show login prompt -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card bg-dark border-secondary p-4 text-center">
+                <h3>Welcome to Burner Management</h3>
+                <p class="mb-3">Sign in to access your account and manage events.</p>
+                <a href="{% url 'account_login' %}" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </a>
             </div>
         </div>
     </div>
@@ -50,7 +75,7 @@
         <div class="row">
             {% for event in featured_events %}
             <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card glass-card h-100">
+                <div class="card bg-dark border-secondary h-100">
                     {% if event.image_url %}
                         <img src="{{ event.image_url }}" class="card-img-top" style="height: 200px; object-fit: cover;">
                     {% else %}
@@ -70,7 +95,7 @@
                             <i class="bi bi-ticket me-1"></i>{{ event.tickets_remaining }} tickets left
                         </p>
                         <div class="mt-auto d-flex justify-content-between align-items-center">
-                            <span class="h5 mb-0 text-warning">${{ event.price }}</span>
+                            <span class="h5 mb-0 text-warning">£{{ event.price }}</span>
                             <a href="{% url 'events:detail' event.id %}" class="btn btn-primary btn-sm">
                                 View Details
                             </a>
@@ -89,12 +114,15 @@
     <!-- No events message -->
     <section class="mb-5">
         <div class="text-center">
-            <div class="glass-card p-5">
+            <div class="card bg-dark border-secondary p-5">
                 <i class="bi bi-calendar-x display-1 text-muted mb-3"></i>
                 <h3>No Events Yet</h3>
                 <p class="text-muted">Events will appear here once they're added to Firestore.</p>
                 {% if user.is_authenticated and user.is_site_admin %}
                 <p class="text-muted">As a site admin, you can add events through the admin interface.</p>
+                <a href="{% url 'events:create' %}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle me-2"></i>Create First Event
+                </a>
                 {% endif %}
             </div>
         </div>
@@ -105,21 +133,21 @@
     <section class="py-5">
         <div class="row text-center">
             <div class="col-md-4 mb-4">
-                <div class="glass-card p-4">
+                <div class="card bg-dark border-secondary p-4">
                     <i class="bi bi-calendar-event display-4 text-warning mb-3"></i>
                     <h3>{{ total_events }}</h3>
                     <p class="text-muted">Active Events</p>
                 </div>
             </div>
             <div class="col-md-4 mb-4">
-                <div class="glass-card p-4">
+                <div class="card bg-dark border-secondary p-4">
                     <i class="bi bi-building display-4 text-warning mb-3"></i>
                     <h3>{{ total_venues }}</h3>
                     <p class="text-muted">Partner Venues</p>
                 </div>
             </div>
             <div class="col-md-4 mb-4">
-                <div class="glass-card p-4">
+                <div class="card bg-dark border-secondary p-4">
                     <i class="bi bi-people display-4 text-warning mb-3"></i>
                     <h3>Growing</h3>
                     <p class="text-muted">Community</p>

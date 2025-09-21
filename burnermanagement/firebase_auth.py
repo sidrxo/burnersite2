@@ -41,28 +41,36 @@ class FirebaseAuthenticationBackend(BaseBackend):
             return None
     
     def _authenticate_with_email_password(self, email, password):
-        """Authenticate using email/password (for Django users transitioning to Firebase)"""
+        """
+        Authenticate using email/password - only for existing users created by admins
+        No new user creation through this method
+        """
         try:
-            # First, try to get Firebase user
+            # Check if user exists in Django first
+            User = get_user_model()
             try:
-                firebase_user = auth.get_user_by_email(email)
-                # If Firebase user exists, let allauth handle the authentication
-                # This will be handled by the frontend Firebase SDK
-                return None
-            except auth.UserNotFoundError:
-                # User doesn't exist in Firebase, check if they exist in Django
-                User = get_user_model()
-                try:
-                    django_user = User.objects.get(email=email)
-                    if django_user.check_password(password):
-                        # Migrate this user to Firebase
+                django_user = User.objects.get(email=email)
+                if django_user.check_password(password):
+                    # Check if user exists in Firebase, if not migrate them
+                    try:
+                        firebase_user = auth.get_user_by_email(email)
+                        return django_user
+                    except auth.UserNotFoundError:
+                        # User exists in Django but not Firebase - migrate them
                         firebase_user = self._migrate_django_user_to_firebase(django_user, password)
                         if firebase_user:
                             return django_user
-                except User.DoesNotExist:
-                    pass
-            
-            return None
+                return None
+            except User.DoesNotExist:
+                # User doesn't exist in Django - check Firebase
+                try:
+                    firebase_user = auth.get_user_by_email(email)
+                    # User exists in Firebase but not Django - create Django user
+                    return self._get_or_create_django_user(firebase_user.uid, email)
+                except auth.UserNotFoundError:
+                    # User doesn't exist anywhere - do not create
+                    logger.info(f"Authentication failed for non-existent user: {email}")
+                    return None
             
         except Exception as e:
             logger.error(f"Email/password authentication failed: {e}")
@@ -100,15 +108,8 @@ class FirebaseAuthenticationBackend(BaseBackend):
                         'display_name': user_firestore_data.get('displayName', email.split('@')[0]),
                         'role': user_firestore_data.get('role', 'user'),
                     })
-                else:
-                    # Create user document in Firestore for new regular users
-                    db.collection('users').document(uid).set({
-                        'email': email,
-                        'displayName': email.split('@')[0],
-                        'role': 'user',
-                        'createdAt': firestore.SERVER_TIMESTAMP,
-                        'provider': 'email'
-                    })
+                # Note: We don't create new user documents in Firestore anymore
+                # Only admins can create users
             
             # Create or update Django user
             User = get_user_model()
@@ -187,7 +188,7 @@ class FirebaseAdminManager:
         self.admin_collection = 'admins'
     
     def create_admin_user(self, email, role, venue_id=None, display_name=None, password=None):
-        """Create admin user in both Firebase Auth and Firestore, with optional Django sync"""
+        """Create admin user in both Firebase Auth and Firestore, with Django sync"""
         if not self.db:
             raise Exception("Firebase not initialized. Check your service account key.")
             
@@ -198,21 +199,28 @@ class FirebaseAdminManager:
             raise ValueError("venueAdmin and subAdmin must have a venue_id")
         
         try:
-            # Check if admin already exists
-            existing_admin = self.get_admin_by_email(email)
-            if existing_admin:
-                raise ValueError(f"Admin with email {email} already exists")
+            # Check if admin already exists in Firebase
+            try:
+                existing_user = auth.get_user_by_email(email)
+                raise ValueError(f"User with email {email} already exists in Firebase")
+            except auth.UserNotFoundError:
+                pass  # Good, user doesn't exist
+            
+            # Check if user exists in Django
+            User = get_user_model()
+            if User.objects.filter(email=email).exists():
+                raise ValueError(f"User with email {email} already exists in Django")
             
             # Generate a secure password if not provided
             if not password:
                 password = self._generate_secure_password()
             
-            # Create user in Firebase Auth
+            # Create user in Firebase Auth first
             user_record = auth.create_user(
                 email=email,
                 password=password,
                 display_name=display_name or email.split('@')[0],
-                email_verified=False
+                email_verified=False  # They'll need to verify or admin will verify
             )
             
             # Create admin document in Firestore
@@ -231,24 +239,16 @@ class FirebaseAdminManager:
             
             self.db.collection(self.admin_collection).document(user_record.uid).set(admin_data)
             
-            # Create corresponding Django user (for immediate access)
-            User = get_user_model()
-            django_user, created = User.objects.get_or_create(
+            # Create corresponding Django user
+            django_user = User.objects.create(
                 email=email,
-                defaults={
-                    'username': email,
-                    'role': role,
-                    'venue_id': venue_id or '',
-                    'display_name': display_name or email.split('@')[0],
-                }
+                username=email,
+                role=role,
+                venue_id=venue_id or '',
+                display_name=display_name or email.split('@')[0],
             )
-            
-            if not created:
-                # Update existing user
-                django_user.role = role
-                django_user.venue_id = venue_id or ''
-                django_user.display_name = display_name or email.split('@')[0]
-                django_user.save()
+            django_user.set_password(password)
+            django_user.save()
             
             logger.info(f"Created admin user: {email} with role: {role}")
             
@@ -265,6 +265,11 @@ class FirebaseAdminManager:
             try:
                 if 'user_record' in locals():
                     auth.delete_user(user_record.uid)
+            except:
+                pass
+            try:
+                if 'django_user' in locals():
+                    django_user.delete()
             except:
                 pass
             logger.error(f"Failed to create admin user: {e}")

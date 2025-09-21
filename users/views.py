@@ -10,6 +10,8 @@ from django.core.paginator import Paginator
 from burnermanagement.firebase_auth import FirebaseAdminManager
 from venues.models import Venue
 import logging
+import json
+from django.contrib.auth import login
 
 logger = logging.getLogger(__name__)
 
@@ -281,14 +283,6 @@ def send_password_reset(request):
     except Exception as e:
         logger.error(f"Error sending password reset: {e}")
         return JsonResponse({'error': 'Failed to send password reset'}, status=500)
-    
-    # Add this to users/views.py
-
-import json
-from django.contrib.auth import login
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-from django.views.decorators.http import require_http_methods
 
 @require_http_methods(["POST"])
 def firebase_login(request):
