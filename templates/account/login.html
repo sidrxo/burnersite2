@@ -15,20 +15,17 @@
                 </div>
                 
                 <div class="card-body p-4">
-                    <!-- Display any form errors -->
-                    {% if form.non_field_errors %}
-                        <div class="alert alert-danger">
-                            {{ form.non_field_errors }}
-                        </div>
-                    {% endif %}
+                    <!-- Display any errors -->
+                    <div id="error-message" class="alert alert-danger" style="display: none;"></div>
+                    <div id="success-message" class="alert alert-success" style="display: none;"></div>
 
-                    <!-- Email/Password Login Form -->
-                    <form method="post" action="{% url 'account_login' %}" id="loginForm">
+                    <!-- Firebase Login Form -->
+                    <form id="firebaseLoginForm">
                         {% csrf_token %}
                         
                         <!-- Email Field -->
                         <div class="mb-3">
-                            <label for="{{ form.login.id_for_label }}" class="form-label">
+                            <label for="email" class="form-label">
                                 Email Address <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
@@ -36,23 +33,17 @@
                                     <i class="bi bi-envelope"></i>
                                 </span>
                                 <input type="email" 
-                                       name="{{ form.login.name }}" 
-                                       id="{{ form.login.id_for_label }}"
-                                       class="form-control {% if form.login.errors %}is-invalid{% endif %}"
+                                       name="email" 
+                                       id="email"
+                                       class="form-control"
                                        placeholder="your.email@example.com"
-                                       value="{{ form.login.value|default:'' }}"
                                        required>
                             </div>
-                            {% if form.login.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.login.errors.0 }}
-                                </div>
-                            {% endif %}
                         </div>
                         
                         <!-- Password Field -->
                         <div class="mb-3">
-                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                            <label for="password" class="form-label">
                                 Password <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
@@ -60,55 +51,31 @@
                                     <i class="bi bi-lock"></i>
                                 </span>
                                 <input type="password" 
-                                       name="{{ form.password.name }}" 
-                                       id="{{ form.password.id_for_label }}"
-                                       class="form-control {% if form.password.errors %}is-invalid{% endif %}"
+                                       name="password" 
+                                       id="password"
+                                       class="form-control"
                                        placeholder="Enter your password"
                                        required>
                                 <button type="button" class="btn btn-outline-secondary" onclick="togglePassword()">
                                     <i class="bi bi-eye" id="passwordToggle"></i>
                                 </button>
                             </div>
-                            {% if form.password.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {{ form.password.errors.0 }}
-                                </div>
-                            {% endif %}
                         </div>
-                        
-                        <!-- Remember Me -->
-                        <div class="mb-3">
-                            <div class="form-check">
-                                <input type="checkbox" 
-                                       name="{{ form.remember.name }}" 
-                                       id="{{ form.remember.id_for_label }}"
-                                       class="form-check-input"
-                                       {% if form.remember.value %}checked{% endif %}>
-                                <label class="form-check-label" for="{{ form.remember.id_for_label }}">
-                                    Keep me signed in
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <!-- Hidden redirect field -->
-                        {% if redirect_field_value %}
-                            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
-                        {% endif %}
                         
                         <!-- Submit Button -->
                         <div class="d-grid gap-3 mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg" id="loginButton">
                                 <i class="bi bi-box-arrow-in-right me-2"></i>
                                 Sign In
                             </button>
                         </div>
                     </form>
                     
-                                            <!-- Alternative Actions -->
+                    <!-- Alternative Actions -->
                     <div class="text-center">
-                        <a href="{% url 'account_reset_password' %}" class="btn btn-link text-light">
+                        <button class="btn btn-link text-light" onclick="sendPasswordReset()">
                             Forgot Password?
-                        </a>
+                        </button>
                     </div>
                 </div>
                 
@@ -123,38 +90,53 @@
     </div>
 </div>
 
-<!-- Firebase Integration -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 
 <script>
-// Initialize Firebase (you'll need to add your config)
+// Firebase Configuration from Django settings
 const firebaseConfig = {
-    // Add your Firebase config here
-    // This should match the config from your Firebase project settings
+    apiKey: "{{ firebase_config.apiKey }}",
+    authDomain: "{{ firebase_config.authDomain }}",
+    projectId: "{{ firebase_config.projectId }}",
+    storageBucket: "{{ firebase_config.storageBucket }}",
+    messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+    appId: "{{ firebase_config.appId }}"
 };
 
-// Only initialize if config is provided
-if (firebaseConfig.apiKey) {
+// Initialize Firebase
+if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith('AIza')) {
     firebase.initializeApp(firebaseConfig);
+    console.log('Firebase initialized successfully');
     
-    // Override form submission to try Firebase first
-    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    // Handle form submission
+    document.getElementById('firebaseLoginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const email = document.getElementById('{{ form.login.id_for_label }}').value;
-        const password = document.getElementById('{{ form.password.id_for_label }}').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const loginButton = document.getElementById('loginButton');
+        const errorDiv = document.getElementById('error-message');
+        const successDiv = document.getElementById('success-message');
         
-        if (!email || !password) {
-            // Let Django handle validation
-            this.submit();
-            return;
-        }
+        // Clear previous messages
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
+        
+        // Disable button and show loading
+        loginButton.disabled = true;
+        loginButton.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Signing In...';
         
         try {
-            // Try Firebase authentication first
+            console.log('Attempting Firebase authentication for:', email);
+            
+            // Sign in with Firebase
             const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+            console.log('Firebase authentication successful');
+            
             const idToken = await userCredential.user.getIdToken();
+            console.log('Got Firebase ID token');
             
             // Send token to Django for session creation
             const response = await fetch('{% url "users:firebase_login" %}', {
@@ -167,23 +149,56 @@ if (firebaseConfig.apiKey) {
             });
             
             const data = await response.json();
+            console.log('Django response:', data);
             
             if (data.success) {
-                window.location.href = data.redirect_url || '{% url "core:home" %}';
+                successDiv.textContent = 'Login successful! Redirecting...';
+                successDiv.style.display = 'block';
+                setTimeout(() => {
+                    window.location.href = data.redirect_url || '{% url "core:home" %}';
+                }, 1000);
             } else {
-                throw new Error(data.error || 'Firebase authentication failed');
+                throw new Error(data.error || 'Authentication failed');
             }
             
         } catch (error) {
-            console.log('Firebase auth failed, falling back to Django:', error.message);
-            // Fall back to Django authentication
-            this.submit();
+            console.error('Login error:', error);
+            
+            let errorMessage = 'Login failed. ';
+            if (error.code === 'auth/user-not-found') {
+                errorMessage += 'No account found with this email address.';
+            } else if (error.code === 'auth/wrong-password') {
+                errorMessage += 'Incorrect password.';
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage += 'Invalid email address.';
+            } else if (error.code === 'auth/user-disabled') {
+                errorMessage += 'This account has been disabled.';
+            } else if (error.code === 'auth/too-many-requests') {
+                errorMessage += 'Too many failed attempts. Please try again later.';
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage += 'Network error. Please check your connection.';
+            } else {
+                errorMessage += error.message || 'Please check your credentials and try again.';
+            }
+            
+            errorDiv.textContent = errorMessage;
+            errorDiv.style.display = 'block';
+        } finally {
+            // Re-enable button
+            loginButton.disabled = false;
+            loginButton.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Sign In';
         }
     });
+} else {
+    // Show error if Firebase config is missing
+    console.error('Firebase configuration is invalid or missing');
+    document.getElementById('error-message').textContent = 'Firebase configuration is missing. Please contact your administrator.';
+    document.getElementById('error-message').style.display = 'block';
+    document.getElementById('firebaseLoginForm').style.display = 'none';
 }
 
 function togglePassword() {
-    const passwordInput = document.getElementById('{{ form.password.id_for_label }}');
+    const passwordInput = document.getElementById('password');
     const toggle = document.getElementById('passwordToggle');
     
     if (passwordInput.type === 'password') {
@@ -195,12 +210,30 @@ function togglePassword() {
     }
 }
 
-// Add loading state to submit button
-document.getElementById('loginForm').addEventListener('submit', function() {
-    const submitBtn = this.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Signing In...';
-});
+async function sendPasswordReset() {
+    const email = document.getElementById('email').value;
+    
+    if (!email) {
+        alert('Please enter your email address first.');
+        return;
+    }
+    
+    try {
+        await firebase.auth().sendPasswordResetEmail(email);
+        document.getElementById('success-message').textContent = `Password reset email sent to ${email}`;
+        document.getElementById('success-message').style.display = 'block';
+    } catch (error) {
+        console.error('Password reset error:', error);
+        let errorMessage = 'Failed to send password reset email. ';
+        if (error.code === 'auth/user-not-found') {
+            errorMessage += 'No account found with this email address.';
+        } else {
+            errorMessage += error.message;
+        }
+        document.getElementById('error-message').textContent = errorMessage;
+        document.getElementById('error-message').style.display = 'block';
+    }
+}
 </script>
 
 <style>
@@ -260,11 +293,6 @@ document.getElementById('loginForm').addEventListener('submit', function() {
 
 .form-control::placeholder {
     color: rgba(255, 255, 255, 0.6);
-}
-
-.form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
 }
 
 .btn-link {
