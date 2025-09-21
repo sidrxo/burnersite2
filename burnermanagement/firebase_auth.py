@@ -1,4 +1,3 @@
-# burnermanagement/firebase_auth.py (Firebase-only version)
 import firebase_admin
 from firebase_admin import auth, firestore
 from django.conf import settings
@@ -30,6 +29,8 @@ class FirebaseAuthenticationBackend(BaseBackend):
             uid = decoded_token['uid']
             email = decoded_token.get('email')
             
+            logger.info(f"Firebase token decoded - UID: {uid}, Email: {email}")
+            
             if not email:
                 logger.error("No email in Firebase token")
                 return None
@@ -47,50 +48,89 @@ class FirebaseAuthenticationBackend(BaseBackend):
             db = firestore.client()
             admin_doc = db.collection('admins').document(uid).get()
             
+            logger.info(f"Checking admin doc for UID: {uid}")
+            logger.info(f"Admin doc exists: {admin_doc.exists}")
+            
             user_data = {
                 'email': email,
                 'username': email,
                 'role': 'user',  # default role
                 'venue_id': '',
                 'display_name': email.split('@')[0],
+                'firebase_uid': uid,  # IMPORTANT: Set the Firebase UID
             }
             
             if admin_doc.exists:
                 # This is an admin user
                 admin_data = admin_doc.to_dict()
+                logger.info(f"Admin data found: {admin_data}")
+                
+                extracted_role = admin_data.get('role', 'user')
+                extracted_venue_id = admin_data.get('venueId', '')
+                extracted_display_name = admin_data.get('displayName', email.split('@')[0])
+                
+                logger.info(f"Extracted role: {extracted_role}")
+                logger.info(f"Extracted venue_id: {extracted_venue_id}")
+                logger.info(f"Extracted display_name: {extracted_display_name}")
+                
                 user_data.update({
-                    'role': admin_data.get('role', 'user'),
-                    'venue_id': admin_data.get('venueId', ''),
-                    'display_name': admin_data.get('displayName', email.split('@')[0]),
+                    'role': extracted_role,
+                    'venue_id': extracted_venue_id,
+                    'display_name': extracted_display_name,
                 })
             else:
+                logger.info(f"No admin doc found for UID: {uid}, checking regular users collection")
                 # Check if regular user exists in Firestore /users/ collection
                 user_doc = db.collection('users').document(uid).get()
+                logger.info(f"Regular user doc exists: {user_doc.exists}")
+                
                 if user_doc.exists:
                     user_firestore_data = user_doc.to_dict()
+                    logger.info(f"Regular user data found: {user_firestore_data}")
                     user_data.update({
                         'display_name': user_firestore_data.get('displayName', email.split('@')[0]),
                         'role': user_firestore_data.get('role', 'user'),
                     })
             
+            logger.info(f"Final user_data before Django user creation: {user_data}")
+            
             # Create or update Django user
             User = get_user_model()
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults=user_data
-            )
             
-            # Update existing user data
+            # Try to get user by firebase_uid first, then by email
+            user = None
+            try:
+                user = User.objects.get(firebase_uid=uid)
+                logger.info(f"Found existing user by firebase_uid: {user.email}")
+                created = False
+            except User.DoesNotExist:
+                try:
+                    user = User.objects.get(email=email)
+                    logger.info(f"Found existing user by email: {user.email}")
+                    created = False
+                except User.DoesNotExist:
+                    logger.info(f"Creating new user with email: {email}")
+                    user = User.objects.create(**user_data)
+                    created = True
+            
+            # Update existing user data if not created
             if not created:
+                logger.info(f"Updating existing user. Current role: {user.role}")
                 for key, value in user_data.items():
+                    old_value = getattr(user, key, None)
                     setattr(user, key, value)
+                    if old_value != value:
+                        logger.info(f"Updated {key}: {old_value} -> {value}")
                 user.save()
+                logger.info(f"User saved. New role: {user.role}")
             
-            logger.info(f"Firebase authentication successful for {email}")
+            logger.info(f"Firebase authentication successful for {email} with role: {user.role}")
             return user
             
         except Exception as e:
             logger.error(f"Failed to get/create Django user: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
             return None
     
     def get_user(self, user_id):
@@ -163,6 +203,7 @@ class FirebaseAdminManager:
                 role=role,
                 venue_id=venue_id or '',
                 display_name=display_name or email.split('@')[0],
+                firebase_uid=user_record.uid,  # IMPORTANT: Set Firebase UID
                 # Don't set password - Firebase handles authentication
             )
             
@@ -191,4 +232,183 @@ class FirebaseAdminManager:
             logger.error(f"Failed to create admin user: {e}")
             raise
     
-    # ... rest of the methods remain the same ...
+    def update_admin_role(self, uid, new_role, new_venue_id=None):
+        """Update admin user's role and venue by UID"""
+        if not self.db:
+            raise Exception("Firebase not initialized")
+            
+        try:
+            update_data = {
+                'role': new_role,
+                'updatedAt': firestore.SERVER_TIMESTAMP
+            }
+            
+            if new_venue_id is not None:
+                update_data['venueId'] = new_venue_id
+            
+            self.db.collection(self.admin_collection).document(uid).update(update_data)
+            
+            # Update Django user too
+            try:
+                User = get_user_model()
+                # Try to find by firebase_uid first, then by email
+                django_user = None
+                try:
+                    django_user = User.objects.get(firebase_uid=uid)
+                except User.DoesNotExist:
+                    firebase_user = auth.get_user(uid)
+                    django_user = User.objects.get(email=firebase_user.email)
+                
+                django_user.role = new_role
+                if new_venue_id is not None:
+                    django_user.venue_id = new_venue_id
+                django_user.firebase_uid = uid  # Ensure this is set
+                django_user.save()
+            except Exception as django_error:
+                logger.warning(f"Could not update Django user: {django_error}")
+            
+            logger.info(f"Updated admin {uid} role to {new_role}")
+            
+        except Exception as e:
+            logger.error(f"Failed to update admin role: {e}")
+            raise
+    
+    def get_admin_by_email(self, email):
+        """Get admin by email from /admins/ collection"""
+        if not self.db:
+            return None
+            
+        try:
+            user_record = auth.get_user_by_email(email)
+            admin_doc = self.db.collection(self.admin_collection).document(user_record.uid).get()
+            
+            if admin_doc.exists:
+                admin_data = admin_doc.to_dict()
+                admin_data['uid'] = user_record.uid
+                admin_data['firebase_user'] = user_record
+                return admin_data
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to get admin by email: {e}")
+            return None
+    
+    def list_admin_users(self):
+        """List all admin users from /admins/ collection"""
+        if not self.db:
+            logger.error("Firebase not initialized")
+            return []
+            
+        try:
+            admin_users = []
+            docs = self.db.collection(self.admin_collection).stream()
+            
+            for doc in docs:
+                admin_data = doc.to_dict()
+                admin_data['uid'] = doc.id
+                
+                # Get additional Firebase Auth data
+                try:
+                    firebase_user = auth.get_user(doc.id)
+                    admin_data['disabled'] = firebase_user.disabled
+                    admin_data['email_verified'] = firebase_user.email_verified
+                except:
+                    admin_data['disabled'] = False
+                    admin_data['email_verified'] = False
+                
+                admin_users.append(admin_data)
+            
+            return admin_users
+            
+        except Exception as e:
+            logger.error(f"Failed to list admin users: {e}")
+            return []
+    
+    def activate_admin(self, uid):
+        """Activate an admin account"""
+        if not self.db:
+            raise Exception("Firebase not initialized")
+            
+        try:
+            auth.update_user(uid, disabled=False)
+            
+            self.db.collection(self.admin_collection).document(uid).update({
+                'isActive': True,
+                'reactivatedAt': firestore.SERVER_TIMESTAMP
+            })
+            
+            logger.info(f"Activated admin: {uid}")
+            
+        except Exception as e:
+            logger.error(f"Failed to activate admin: {e}")
+            raise
+    
+    def deactivate_admin(self, uid):
+        """Deactivate an admin account"""
+        if not self.db:
+            raise Exception("Firebase not initialized")
+            
+        try:
+            auth.update_user(uid, disabled=True)
+            
+            self.db.collection(self.admin_collection).document(uid).update({
+                'isActive': False,
+                'deactivatedAt': firestore.SERVER_TIMESTAMP
+            })
+            
+            logger.info(f"Deactivated admin: {uid}")
+            
+        except Exception as e:
+            logger.error(f"Failed to deactivate admin: {e}")
+            raise
+    
+    def delete_admin(self, uid):
+        """Permanently delete an admin account"""
+        if not self.db:
+            raise Exception("Firebase not initialized")
+            
+        try:
+            # Get user email before deletion for Django cleanup
+            try:
+                firebase_user = auth.get_user(uid)
+                email = firebase_user.email
+                
+                # Delete Django user if exists
+                User = get_user_model()
+                try:
+                    # Try to find by firebase_uid first, then by email
+                    try:
+                        django_user = User.objects.get(firebase_uid=uid)
+                    except User.DoesNotExist:
+                        django_user = User.objects.get(email=email)
+                    django_user.delete()
+                except User.DoesNotExist:
+                    pass
+            except:
+                pass
+            
+            auth.delete_user(uid)
+            self.db.collection(self.admin_collection).document(uid).delete()
+            
+            logger.info(f"Deleted admin: {uid}")
+            
+        except Exception as e:
+            logger.error(f"Failed to delete admin: {e}")
+            raise
+    
+    def send_password_reset(self, email):
+        """Send password reset email"""
+        try:
+            reset_link = auth.generate_password_reset_link(email)
+            logger.info(f"Generated password reset link for: {email}")
+            return reset_link
+            
+        except Exception as e:
+            logger.error(f"Failed to generate password reset: {e}")
+            raise
+    
+    def _generate_secure_password(self, length=12):
+        """Generate a secure random password"""
+        characters = string.ascii_letters + string.digits + "!@#$%^&*"
+        password = ''.join(secrets.choice(characters) for _ in range(length))
+        return password

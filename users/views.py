@@ -18,12 +18,31 @@ logger = logging.getLogger(__name__)
 class ProfileView(LoginRequiredMixin, TemplateView):
     """User profile view"""
     template_name = 'users/profile.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Debug logging for user role
+        logger.info(f"ProfileView - User: {user.email}")
+        logger.info(f"ProfileView - User role: {user.role}")
+        logger.info(f"ProfileView - User firebase_uid: {user.firebase_uid}")
+        logger.info(f"ProfileView - User venue_id: {user.venue_id}")
+        logger.info(f"ProfileView - is_site_admin(): {user.is_site_admin()}")
+        
+        return context
 
 @login_required
 def admin_management(request):
     """Admin user management interface (site admins only)"""
+    # Debug logging
+    logger.info(f"Admin management access attempt by: {request.user.email}")
+    logger.info(f"User role: {request.user.role}")
+    logger.info(f"is_site_admin(): {request.user.is_site_admin()}")
+    
     if not request.user.is_site_admin():
         messages.error(request, "Only site administrators can manage admin users")
+        logger.warning(f"Access denied to admin management for user {request.user.email} with role {request.user.role}")
         return redirect('core:home')
     
     try:
@@ -237,12 +256,10 @@ def delete_admin_user(request):
             return JsonResponse({'error': 'Please type DELETE to confirm'}, status=400)
         
         # Prevent deletion of the current user
-        if request.user.email:
-            manager = FirebaseAdminManager()
-            current_admin = manager.get_admin_by_email(request.user.email)
-            if current_admin and current_admin.get('uid') == uid:
-                return JsonResponse({'error': 'Cannot delete your own account'}, status=400)
+        if request.user.firebase_uid == uid:
+            return JsonResponse({'error': 'Cannot delete your own account'}, status=400)
         
+        manager = FirebaseAdminManager()
         manager.delete_admin(uid)
         
         logger.warning(f"Site admin {request.user.email} deleted admin {uid}")
@@ -300,6 +317,13 @@ def firebase_login(request):
         
         if user:
             login(request, user)
+            
+            # Debug logging after login
+            logger.info(f"User logged in successfully: {user.email}")
+            logger.info(f"User role after login: {user.role}")
+            logger.info(f"User firebase_uid after login: {user.firebase_uid}")
+            logger.info(f"User is_site_admin() after login: {user.is_site_admin()}")
+            
             return JsonResponse({
                 'success': True,
                 'redirect_url': '/',
