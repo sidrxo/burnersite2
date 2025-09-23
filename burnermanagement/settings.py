@@ -106,9 +106,11 @@ AUTHENTICATION_BACKENDS = [
 
 # Allauth configuration (minimal - mainly for logout handling)
 ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'  # Firebase handles email verification
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = False
 ACCOUNT_LOGOUT_ON_GET = False
+ACCOUNT_SESSION_REMEMBER = True
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
