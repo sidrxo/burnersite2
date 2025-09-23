@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'allauth.account',
     'crispy_forms',
     'crispy_bootstrap5',
+    'tailwind',  # Fixed: was 'django-tailwind'
+    'theme',     # Tailwind CSS app
     
     # Local apps
     'core',
@@ -117,6 +119,12 @@ LOGOUT_REDIRECT_URL = '/'
 # Crispy Forms
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
+
+# Tailwind Configuration
+TAILWIND_APP_NAME = 'theme'
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'

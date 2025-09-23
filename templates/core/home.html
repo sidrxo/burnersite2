@@ -5,6 +5,7 @@
 {% block title %}Home - Burner Management{% endblock %}
 
 {% block content %}
+<!-- This content only shows when user is authenticated (handled by base.html) -->
 <div class="hero-section py-5 mb-5" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7));">
     <div class="container text-center">
         <div class="row justify-content-center">
@@ -27,7 +28,6 @@
 
 <div class="container">
     <!-- Welcome Message -->
-    {% if user.is_authenticated %}
     <div class="row mb-5">
         <div class="col-12">
             <div class="card bg-dark border-secondary p-4">
@@ -53,20 +53,6 @@
             </div>
         </div>
     </div>
-    {% else %}
-    <!-- Not authenticated - show login prompt -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <div class="card bg-dark border-secondary p-4 text-center">
-                <h3>Welcome to Burner Management</h3>
-                <p class="mb-3">Sign in to access your account and manage events.</p>
-                <a href="{% url 'account_login' %}" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
-                </a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Featured Events -->
     {% if featured_events %}

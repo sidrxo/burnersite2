@@ -1,124 +1,329 @@
-<!-- templates/base.html -->
 <!DOCTYPE html>
 {% load static %}
-<html lang="en">
+{% load tailwind_tags %}
+<html lang="en" data-theme="dark" class="bg-black">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Burner Management{% endblock %}</title>
     
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
-    
+    {% tailwind_css %}
     <link rel="stylesheet" href="{% static 'css/style.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-dark text-light">
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="{% url 'core:home' %}">
-                <i class="bi bi-ticket-detailed text-light me-2"></i>Burner
-            </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'events:list' %}">Events</a>
+<body class="bg-black text-white min-h-screen">
+    {% if user.is_authenticated %}
+    <!-- Navigation - Only show when logged in -->
+    <div class="navbar bg-black border-b border-white">
+        <div class="navbar-start">
+            <div class="dropdown">
+                <div tabindex="0" role="button" class="btn btn-ghost lg:hidden text-white">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+                    </svg>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-black border border-white rounded-box w-52">
+                    <li><a href="{% url 'events:list' %}" class="text-white hover:bg-white hover:text-black">Events</a></li>
+                    <li><a href="{% url 'venues:list' %}" class="text-white hover:bg-white hover:text-black">Venues</a></li>
+                    {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
+                    <li>
+                        <a class="text-white hover:bg-white hover:text-black">Management</a>
+                        <ul class="p-2 bg-black">
+                            <li><a href="{% url 'events:manage' %}" class="text-white hover:bg-white hover:text-black">Events</a></li>
+                            {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
+                            <li><a href="{% url 'venues:dashboard' %}" class="text-white hover:bg-white hover:text-black">Venues</a></li>
+                            {% endif %}
+                            {% if user.is_site_admin %}
+                            <li><a href="{% url 'users:admin_management' %}" class="text-white hover:bg-white hover:text-black">Admin Users</a></li>
+                            {% endif %}
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'venues:list' %}">Venues</a>
-                    </li>
-                    {% if user.is_authenticated %}
-                        {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-gear me-1"></i>Management
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-dark">
-                                <li><a class="dropdown-item" href="{% url 'events:manage' %}">
-                                    <i class="bi bi-calendar-event me-2"></i>Events
-                                </a></li>
-                                {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
-                                <li><a class="dropdown-item" href="{% url 'venues:dashboard' %}">
-                                    <i class="bi bi-building me-2"></i>Venues
-                                </a></li>
-                                {% endif %}
-                                {% if user.is_site_admin %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'users:admin_management' %}">
-                                    <i class="bi bi-shield-check me-2"></i>Admin Users
-                                </a></li>
-                                {% endif %}
-                            </ul>
-                        </li>
-                        {% endif %}
-                    {% endif %}
-                </ul>
-                
-                <ul class="navbar-nav">
-                    {% if user.is_authenticated %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                                <i class="bi bi-person-circle me-1"></i>{{ user.display_name|default:user.email }}
-                                {% if user.is_site_admin %}
-                                    <span class="badge bg-secondary text-light ms-1">Admin</span>
-                                {% elif user.is_venue_admin %}
-                                    <span class="badge bg-info text-light ms-1">Venue Admin</span>
-                                {% elif user.is_sub_admin %}
-                                    <span class="badge bg-secondary ms-1">Sub Admin</span>
-                                {% endif %}
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-dark">
-                                <li><a class="dropdown-item" href="{% url 'users:profile' %}">
-                                    <i class="bi bi-person me-2"></i>Profile
-                                </a></li>
-                                <li><a class="dropdown-item" href="{% url 'tickets:my_tickets' %}">
-                                    <i class="bi bi-ticket me-2"></i>My Tickets
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'account_logout' %}">
-                                    <i class="bi bi-box-arrow-right me-2"></i>Sign Out
-                                </a></li>
-                            </ul>
-                        </li>
-                    {% else %}
-                        <li class="nav-item">
-                            <a href="{% url 'account_login' %}" class="btn btn-outline-light btn-sm">
-                                <i class="bi bi-box-arrow-in-right me-1"></i>Sign In
-                            </a>
-                        </li>
                     {% endif %}
                 </ul>
             </div>
+            <a class="btn btn-ghost text-xl font-bold text-white hover:bg-white hover:text-black" href="{% url 'core:home' %}">
+                Burner
+            </a>
         </div>
-    </nav>
+        
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="{% url 'events:list' %}" class="btn btn-ghost text-white hover:bg-white hover:text-black">Events</a></li>
+                <li><a href="{% url 'venues:list' %}" class="btn btn-ghost text-white hover:bg-white hover:text-black">Venues</a></li>
+                {% if user.is_authenticated %}
+                    {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
+                    <li>
+                        <details>
+                            <summary class="btn btn-ghost text-white hover:bg-white hover:text-black">Management</summary>
+                            <ul class="p-2 bg-black border border-white rounded-t-none z-[1]">
+                                <li><a href="{% url 'events:manage' %}" class="text-white hover:bg-white hover:text-black">Events</a></li>
+                                {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
+                                <li><a href="{% url 'venues:dashboard' %}" class="text-white hover:bg-white hover:text-black">Venues</a></li>
+                                {% endif %}
+                                {% if user.is_site_admin %}
+                                <li><a href="{% url 'users:admin_management' %}" class="text-white hover:bg-white hover:text-black">Admin Users</a></li>
+                                {% endif %}
+                            </ul>
+                        </details>
+                    </li>
+                    {% endif %}
+                {% endif %}
+            </ul>
+        </div>
+        
+        <div class="navbar-end">
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
+                    <div class="w-10 rounded-full bg-white text-black flex items-center justify-center font-bold">
+                        {{ user.email|first|upper }}
+                    </div>
+                </div>
+                <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-black border border-white rounded-box w-52">
+                    <li class="menu-title">
+                        <span class="text-white">{{ user.display_name|default:user.email }}</span>
+                        {% if user.is_site_admin %}
+                            <div class="badge bg-white text-black">Admin</div>
+                        {% elif user.is_venue_admin %}
+                            <div class="badge bg-white text-black">Venue Admin</div>
+                        {% elif user.is_sub_admin %}
+                            <div class="badge bg-white text-black">Sub Admin</div>
+                        {% endif %}
+                    </li>
+                    <li><a href="{% url 'users:profile' %}" class="text-white hover:bg-white hover:text-black">Profile</a></li>
+                    <li><a href="{% url 'tickets:my_tickets' %}" class="text-white hover:bg-white hover:text-black">My Tickets</a></li>
+                    <li><a href="{% url 'account_logout' %}" class="text-white hover:bg-white hover:text-black">Sign Out</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Main Content -->
-    <main class="flex-grow-1">
+    <main class="flex-1">
         {% if messages %}
-            <div class="container mt-3">
+            <div class="container mx-auto px-4 pt-4">
                 {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    <div class="alert bg-black text-white border border-white mb-4">
+                        <span>{{ message }}</span>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
         
+        {% if not user.is_authenticated %}
+        <!-- Show login form when not authenticated -->
+        <div class="min-h-screen flex items-center justify-center p-4 bg-black">
+            <div class="card w-full max-w-md bg-black border border-white">
+                <div class="card-body">
+                    <div class="text-center mb-6">
+                        <h2 class="card-title text-2xl justify-center text-white mb-2">Burner Management</h2>
+                        <p class="text-white">Sign in to access the system</p>
+                    </div>
+                    
+                    <!-- Display any errors -->
+                    <div id="error-message" class="alert bg-black text-white border border-white mb-4 hidden">
+                        <span id="error-text"></span>
+                    </div>
+                    <div id="success-message" class="alert bg-black text-white border border-white mb-4 hidden">
+                        <span id="success-text"></span>
+                    </div>
+
+                    <!-- Firebase Login Form -->
+                    <form id="firebaseLoginForm" class="space-y-4">
+                        {% csrf_token %}
+                        
+                        <!-- Email Field -->
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-white">Email Address</span>
+                            </label>
+                            <input type="email" 
+                                   name="email" 
+                                   id="email"
+                                   class="input input-bordered bg-black text-white border-white"
+                                   placeholder="your.email@example.com"
+                                   required>
+                        </div>
+                        
+                        <!-- Password Field -->
+                        <div class="form-control">
+                            <label class="label">
+                                <span class="label-text text-white">Password</span>
+                            </label>
+                            <div class="input-group">
+                                <input type="password" 
+                                       name="password" 
+                                       id="password"
+                                       class="input input-bordered flex-1 bg-black text-white border-white"
+                                       placeholder="Enter your password"
+                                       required>
+                                <button type="button" class="btn bg-white text-black border-white hover:bg-black hover:text-white" onclick="togglePassword()">
+                                    <span id="passwordToggle">Show</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="form-control mt-6">
+                            <button type="submit" class="btn bg-white text-black border-white hover:bg-black hover:text-white" id="loginButton">
+                                Sign In
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Alternative Actions -->
+                    <div class="text-center mt-4">
+                        <button class="btn btn-link text-white" onclick="sendPasswordReset()">
+                            Forgot Password?
+                        </button>
+                    </div>
+                    
+                    <div class="text-center mt-6 text-sm text-white">
+                        Your credentials are secure and encrypted
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+        <script>
+        // Firebase Configuration from Django settings
+        const firebaseConfig = {
+            apiKey: "{{ firebase_config.apiKey }}",
+            authDomain: "{{ firebase_config.authDomain }}",
+            projectId: "{{ firebase_config.projectId }}",
+            storageBucket: "{{ firebase_config.storageBucket }}",
+            messagingSenderId: "{{ firebase_config.messagingSenderId }}",
+            appId: "{{ firebase_config.appId }}"
+        };
+
+        // Initialize Firebase
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey.startsWith('AIza')) {
+            firebase.initializeApp(firebaseConfig);
+            
+            // Handle form submission
+            document.getElementById('firebaseLoginForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const loginButton = document.getElementById('loginButton');
+                const errorDiv = document.getElementById('error-message');
+                const successDiv = document.getElementById('success-message');
+                
+                // Clear previous messages
+                errorDiv.classList.add('hidden');
+                successDiv.classList.add('hidden');
+                
+                // Disable button and show loading
+                loginButton.disabled = true;
+                loginButton.innerHTML = 'Signing In...';
+                
+                try {
+                    // Sign in with Firebase
+                    const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                    const idToken = await userCredential.user.getIdToken();
+                    
+                    // Send token to Django for session creation
+                    const response = await fetch('{% url "users:firebase_login" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ id_token: idToken })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        document.getElementById('success-text').textContent = 'Login successful! Redirecting...';
+                        successDiv.classList.remove('hidden');
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url || '{% url "core:home" %}';
+                        }, 1000);
+                    } else {
+                        throw new Error(data.error || 'Authentication failed');
+                    }
+                    
+                } catch (error) {
+                    let errorMessage = 'Login failed. ';
+                    if (error.code === 'auth/user-not-found') {
+                        errorMessage += 'No account found with this email address.';
+                    } else if (error.code === 'auth/wrong-password') {
+                        errorMessage += 'Incorrect password.';
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage += 'Invalid email address.';
+                    } else if (error.code === 'auth/user-disabled') {
+                        errorMessage += 'This account has been disabled.';
+                    } else if (error.code === 'auth/too-many-requests') {
+                        errorMessage += 'Too many failed attempts. Please try again later.';
+                    } else {
+                        errorMessage += error.message || 'Please check your credentials and try again.';
+                    }
+                    
+                    document.getElementById('error-text').textContent = errorMessage;
+                    errorDiv.classList.remove('hidden');
+                } finally {
+                    // Re-enable button
+                    loginButton.disabled = false;
+                    loginButton.innerHTML = 'Sign In';
+                }
+            });
+        } else {
+            // Show error if Firebase config is missing
+            document.getElementById('error-text').textContent = 'Firebase configuration is missing. Please contact your administrator.';
+            document.getElementById('error-message').classList.remove('hidden');
+            document.getElementById('firebaseLoginForm').style.display = 'none';
+        }
+
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggle = document.getElementById('passwordToggle');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggle.textContent = 'Hide';
+            } else {
+                passwordInput.type = 'password';
+                toggle.textContent = 'Show';
+            }
+        }
+
+        async function sendPasswordReset() {
+            const email = document.getElementById('email').value;
+            
+            if (!email) {
+                alert('Please enter your email address first.');
+                return;
+            }
+            
+            try {
+                await firebase.auth().sendPasswordResetEmail(email);
+                document.getElementById('success-text').textContent = `Password reset email sent to ${email}`;
+                document.getElementById('success-message').classList.remove('hidden');
+            } catch (error) {
+                let errorMessage = 'Failed to send password reset email. ';
+                if (error.code === 'auth/user-not-found') {
+                    errorMessage += 'No account found with this email address.';
+                } else {
+                    errorMessage += error.message;
+                }
+                document.getElementById('error-text').textContent = errorMessage;
+                document.getElementById('error-message').classList.remove('hidden');
+            }
+        }
+        </script>
+        {% else %}
+        <!-- Authenticated content -->
         {% block content %}
         {% endblock %}
+        {% endif %}
     </main>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     {% block extra_js %}{% endblock %}
 </body>
 </html>
