@@ -1,11 +1,18 @@
-# tickets/views.py
-from django.views.generic import ListView
-from django.contrib.auth.mixins import LoginRequiredMixin
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 
-class MyTicketsView(LoginRequiredMixin, ListView):
-    template_name = 'tickets/my_tickets.html'
-    context_object_name = 'tickets'
+class ValidateTicketView(APIView):
+    permission_classes = [IsAuthenticated]
     
-    def get_queryset(self):
-        # We'll implement Ticket model next
-        return []
+    def post(self, request):
+        """Validate ticket (scanner permission required)"""
+        if not request.user.can_scan_tickets():
+            return Response(
+                {'error': 'Permission denied'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Add ticket validation logic here
+        return Response({'message': 'Ticket validation endpoint ready'})

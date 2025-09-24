@@ -1,20 +1,11 @@
-# users/urls.py
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
-app_name = 'users'
+router = DefaultRouter()
+router.register(r'users', views.UserViewSet)
 
 urlpatterns = [
-    path('profile/', views.ProfileView.as_view(), name='profile'),
-    
-    # Firebase authentication
-    path('firebase-login/', views.firebase_login, name='firebase_login'),
-    
-    # Admin management (site admins only)
-    path('admin/', views.admin_management, name='admin_management'),
-    path('admin/create/', views.create_admin_user, name='create_admin'),
-    path('admin/update/', views.update_admin_user, name='update_admin'),
-    path('admin/toggle-status/', views.toggle_user_status, name='toggle_status'),
-    path('admin/delete/', views.delete_admin_user, name='delete_admin'),
-    path('admin/reset-password/', views.send_password_reset, name='reset_password'),
+    path('', include(router.urls)),
+    path('profile/', views.UserProfileView.as_view(), name='user-profile'),
 ]

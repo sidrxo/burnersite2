@@ -13,85 +13,96 @@
 </head>
 <body class="bg-black text-white min-h-screen">
     {% if user.is_authenticated %}
-    <!-- Navigation - Only show when logged in -->
-    <div class="navbar bg-black border-b border-white">
+    <!-- Navigation - Simplified with admin links only -->
+    <div class="navbar bg-black border-b border-white/10 sticky top-0 z-50">
         <div class="navbar-start">
-            <div class="dropdown">
-                <div tabindex="0" role="button" class="btn btn-ghost lg:hidden text-white">
-                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
-                    </svg>
-                </div>
-                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-black border border-white rounded-box w-52">
-                    <li><a href="{% url 'events:list' %}" class="text-white hover:bg-white hover:text-black">Events</a></li>
-                    <li><a href="{% url 'venues:list' %}" class="text-white hover:bg-white hover:text-black">Venues</a></li>
-                    {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
-                    <li>
-                        <a class="text-white hover:bg-white hover:text-black">Management</a>
-                        <ul class="p-2 bg-black">
-                            <li><a href="{% url 'events:manage' %}" class="text-white hover:bg-white hover:text-black">Events</a></li>
-                            {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
-                            <li><a href="{% url 'venues:dashboard' %}" class="text-white hover:bg-white hover:text-black">Venues</a></li>
-                            {% endif %}
-                            {% if user.is_site_admin %}
-                            <li><a href="{% url 'users:admin_management' %}" class="text-white hover:bg-white hover:text-black">Admin Users</a></li>
-                            {% endif %}
-                        </ul>
-                    </li>
-                    {% endif %}
-                </ul>
-            </div>
-            <a class="btn btn-ghost text-xl font-bold text-white hover:bg-white hover:text-black" href="{% url 'core:home' %}">
+            <!-- Brand/Logo -->
+            <a class="btn btn-ghost text-xl font-bold text-white hover:bg-white/10 normal-case" href="{% url 'core:home' %}">
+                <svg class="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
                 Burner
             </a>
         </div>
         
-        <div class="navbar-center hidden lg:flex">
-            <ul class="menu menu-horizontal px-1">
-                <li><a href="{% url 'events:list' %}" class="btn btn-ghost text-white hover:bg-white hover:text-black">Events</a></li>
-                <li><a href="{% url 'venues:list' %}" class="btn btn-ghost text-white hover:bg-white hover:text-black">Venues</a></li>
-                {% if user.is_authenticated %}
-                    {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
-                    <li>
-                        <details>
-                            <summary class="btn btn-ghost text-white hover:bg-white hover:text-black">Management</summary>
-                            <ul class="p-2 bg-black border border-white rounded-t-none z-[1]">
-                                <li><a href="{% url 'events:manage' %}" class="text-white hover:bg-white hover:text-black">Events</a></li>
-                                {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
-                                <li><a href="{% url 'venues:dashboard' %}" class="text-white hover:bg-white hover:text-black">Venues</a></li>
-                                {% endif %}
-                                {% if user.is_site_admin %}
-                                <li><a href="{% url 'users:admin_management' %}" class="text-white hover:bg-white hover:text-black">Admin Users</a></li>
-                                {% endif %}
-                            </ul>
-                        </details>
-                    </li>
-                    {% endif %}
+        <!-- Center Navigation - Admin Menu Items -->
+        <div class="navbar-center flex">
+            <div class="flex bg-gray-800 rounded-full p-1 gap-1">
+                <a href="{% url 'core:home' %}" class="btn btn-sm bg-gray-600 hover:bg-gray-500 text-white border-0 rounded-full normal-case">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h10M9 9l3 3m0 0l3-3m-3 3V4" />
+                    </svg>
+                    Overview
+                </a>
+                
+                {% if user.is_site_admin or user.is_venue_admin or user.is_sub_admin %}
+                <a href="{% url 'events:manage' %}" class="btn btn-sm bg-transparent hover:bg-gray-600 text-white border-0 rounded-full normal-case">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Events
+                </a>
                 {% endif %}
-            </ul>
+                
+                <a href="{% url 'tickets:my_tickets' %}" class="btn btn-sm bg-transparent hover:bg-gray-600 text-white border-0 rounded-full normal-case">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                    </svg>
+                    Tickets
+                </a>
+                
+                {% if user.is_site_admin %}
+                <a href="{% url 'users:admin_management' %}" class="btn btn-sm bg-transparent hover:bg-gray-600 text-white border-0 rounded-full normal-case">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                    </svg>
+                    Users
+                </a>
+                {% endif %}
+                
+                <a href="{% url 'users:profile' %}" class="btn btn-sm bg-transparent hover:bg-gray-600 text-white border-0 rounded-full normal-case">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Account
+                </a>
+            </div>
         </div>
         
+        <!-- User Profile Dropdown -->
         <div class="navbar-end">
             <div class="dropdown dropdown-end">
-                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-                    <div class="w-10 rounded-full bg-white text-black flex items-center justify-center font-bold">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar hover:bg-white/10">
+                    <div class="w-10 rounded-full bg-white/20 border border-white/30 text-white flex items-center justify-center font-bold text-sm">
                         {{ user.email|first|upper }}
                     </div>
                 </div>
-                <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-black border border-white rounded-box w-52">
-                    <li class="menu-title">
-                        <span class="text-white">{{ user.display_name|default:user.email }}</span>
-                        {% if user.is_site_admin %}
-                            <div class="badge bg-white text-black">Admin</div>
-                        {% elif user.is_venue_admin %}
-                            <div class="badge bg-white text-black">Venue Admin</div>
-                        {% elif user.is_sub_admin %}
-                            <div class="badge bg-white text-black">Sub Admin</div>
-                        {% endif %}
+                <ul tabindex="0" class="mt-3 z-[1] p-2 shadow-xl menu menu-sm dropdown-content bg-black/95 border border-white/20 rounded-box w-52 backdrop-blur-md">
+                    <li class="menu-title px-4 py-2">
+                        <div class="flex flex-col">
+                            <span class="text-white font-semibold">{{ user.display_name|default:user.email }}</span>
+                            <span class="text-white/60 text-xs">{{ user.email }}</span>
+                        </div>
+                        <div class="flex gap-1 mt-1">
+                            {% if user.is_site_admin %}
+                                <div class="badge badge-sm bg-red-500 text-white border-0">Admin</div>
+                            {% elif user.is_venue_admin %}
+                                <div class="badge badge-sm bg-blue-500 text-white border-0">Venue Admin</div>
+                            {% elif user.is_sub_admin %}
+                                <div class="badge badge-sm bg-green-500 text-white border-0">Sub Admin</div>
+                            {% else %}
+                                <div class="badge badge-sm bg-gray-500 text-white border-0">User</div>
+                            {% endif %}
+                        </div>
                     </li>
-                    <li><a href="{% url 'users:profile' %}" class="text-white hover:bg-white hover:text-black">Profile</a></li>
-                    <li><a href="{% url 'tickets:my_tickets' %}" class="text-white hover:bg-white hover:text-black">My Tickets</a></li>
-                    <li><a href="{% url 'account_logout' %}" class="text-white hover:bg-white hover:text-black">Sign Out</a></li>
+                    <div class="divider my-1"></div>
+                    <li><a href="{% url 'account_logout' %}" class="text-white hover:bg-red-500/20 active:bg-red-500/30">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Sign Out
+                    </a></li>
                 </ul>
             </div>
         </div>
@@ -103,7 +114,7 @@
         {% if messages %}
             <div class="container mx-auto px-4 pt-4">
                 {% for message in messages %}
-                    <div class="alert bg-black text-white border border-white mb-4">
+                    <div class="alert bg-black/50 text-white border border-white/20 mb-4 backdrop-blur-sm">
                         <span>{{ message }}</span>
                     </div>
                 {% endfor %}
@@ -113,18 +124,18 @@
         {% if not user.is_authenticated %}
         <!-- Show login form when not authenticated -->
         <div class="min-h-screen flex items-center justify-center p-4 bg-black">
-            <div class="card w-full max-w-md bg-black border border-white">
+            <div class="card w-full max-w-md bg-black/50 border border-white/20 shadow-xl backdrop-blur-md">
                 <div class="card-body">
                     <div class="text-center mb-6">
                         <h2 class="card-title text-2xl justify-center text-white mb-2">Burner Management</h2>
-                        <p class="text-white">Sign in to access the system</p>
+                        <p class="text-white/80">Sign in to access the system</p>
                     </div>
                     
                     <!-- Display any errors -->
-                    <div id="error-message" class="alert bg-black text-white border border-white mb-4 hidden">
+                    <div id="error-message" class="alert bg-red-500/20 text-red-300 border border-red-500/30 mb-4 hidden">
                         <span id="error-text"></span>
                     </div>
-                    <div id="success-message" class="alert bg-black text-white border border-white mb-4 hidden">
+                    <div id="success-message" class="alert bg-green-500/20 text-green-300 border border-green-500/30 mb-4 hidden">
                         <span id="success-text"></span>
                     </div>
 
@@ -140,7 +151,7 @@
                             <input type="email" 
                                    name="email" 
                                    id="email"
-                                   class="input input-bordered bg-black text-white border-white"
+                                   class="input input-bordered bg-black/50 text-white border-white/30 placeholder-white/50 focus:border-white/60"
                                    placeholder="your.email@example.com"
                                    required>
                         </div>
@@ -150,14 +161,14 @@
                             <label class="label">
                                 <span class="label-text text-white">Password</span>
                             </label>
-                            <div class="input-group">
+                            <div class="join">
                                 <input type="password" 
                                        name="password" 
                                        id="password"
-                                       class="input input-bordered flex-1 bg-black text-white border-white"
+                                       class="input input-bordered join-item flex-1 bg-black/50 text-white border-white/30 placeholder-white/50 focus:border-white/60"
                                        placeholder="Enter your password"
                                        required>
-                                <button type="button" class="btn bg-white text-black border-white hover:bg-black hover:text-white" onclick="togglePassword()">
+                                <button type="button" class="btn join-item bg-white/20 text-white border-white/30 hover:bg-white/30" onclick="togglePassword()">
                                     <span id="passwordToggle">Show</span>
                                 </button>
                             </div>
@@ -165,7 +176,7 @@
                         
                         <!-- Submit Button -->
                         <div class="form-control mt-6">
-                            <button type="submit" class="btn bg-white text-black border-white hover:bg-black hover:text-white" id="loginButton">
+                            <button type="submit" class="btn bg-white text-black hover:bg-white/90 border-0" id="loginButton">
                                 Sign In
                             </button>
                         </div>
@@ -173,12 +184,12 @@
                     
                     <!-- Alternative Actions -->
                     <div class="text-center mt-4">
-                        <button class="btn btn-link text-white" onclick="sendPasswordReset()">
+                        <button class="btn btn-link text-white/80 hover:text-white normal-case" onclick="sendPasswordReset()">
                             Forgot Password?
                         </button>
                     </div>
                     
-                    <div class="text-center mt-6 text-sm text-white">
+                    <div class="text-center mt-6 text-sm text-white/60">
                         Your credentials are secure and encrypted
                     </div>
                 </div>

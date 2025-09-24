@@ -1,39 +1,32 @@
-# venues/views.py
-from django.views.generic import ListView, DetailView, TemplateView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import redirect
-from django.contrib import messages
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from .models import Venue
+from .serializers import VenueSerializer, VenueListSerializer
 
-class VenueListView(TemplateView):
-    template_name = 'venues/list.html'
+class VenueViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['venues'] = Venue.get_all_active()
-        return context
-
-class VenueDetailView(TemplateView):
-    template_name = 'venues/detail.html'
+    def list(self, request):
+        """Get all active venues"""
+        venues = Venue.get_all_active()
+        serializer = VenueListSerializer(venues, many=True)
+        return Response(serializer.data)
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        venue_id = kwargs.get('pk')
-        venue = Venue.get_by_id(venue_id)
-        
+    def retrieve(self, request, pk=None):
+        """Get specific venue"""
+        venue = Venue.get_by_id(pk)
         if not venue:
-            from django.http import Http404
-            raise Http404("Venue does not exist")
-        
-        context['venue'] = venue
-        return context
-
-class VenueDashboardView(LoginRequiredMixin, TemplateView):
-    template_name = 'venues/dashboard.html'
+            return Response(
+                {'error': 'Venue not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = VenueSerializer(venue)
+        return Response(serializer.data)
     
-    def dispatch(self, request, *args, **kwargs):
-        # Check if user has venue management permissions
-        if not (request.user.is_site_admin() or request.user.is_venue_admin() or request.user.is_sub_admin()):
-            messages.error(request, "You don't have permission to access the venue dashboard.")
-            return redirect('core:home')
-        return super().dispatch(request, *args, **kwargs)
+    @action(detail=False, methods=['get'])
+    def count(self, request):
+        """Get venue count"""
+        count = Venue.count_active()
+        return Response({'count': count})

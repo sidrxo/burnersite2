@@ -1,9 +1,10 @@
-# tickets/urls.py
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
-app_name = 'tickets'
+router = DefaultRouter()
 
 urlpatterns = [
-    path('my-tickets/', views.MyTicketsView.as_view(), name='my_tickets'),
+    path('', include(router.urls)),
+    path('validate/', views.ValidateTicketView.as_view(), name='validate-ticket'),
 ]

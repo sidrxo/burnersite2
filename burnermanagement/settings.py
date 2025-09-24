@@ -25,6 +25,8 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     
     # Third party apps
+    'rest_framework',
+    'corsheaders',
     'allauth',
     'allauth.account',
     'crispy_forms',
@@ -41,6 +43,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -101,10 +104,34 @@ AUTH_PASSWORD_VALIDATORS = [
 AUTH_USER_MODEL = 'users.User'
 SITE_ID = 1
 
-# Authentication backends - Firebase only
+# Authentication backends - Basic Django auth for now
 AUTHENTICATION_BACKENDS = [
-    'burnermanagement.firebase_auth.FirebaseAuthenticationBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
+
+# REST Framework configuration
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 20,
+}
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # React
+    "http://localhost:8080",  # Vue  
+    "http://localhost:4200",  # Angular
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:8080", 
+    "http://127.0.0.1:4200",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # Allauth configuration (minimal - mainly for logout handling)
 ACCOUNT_LOGIN_METHODS = {'email'}

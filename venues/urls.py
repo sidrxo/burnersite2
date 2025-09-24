@@ -1,11 +1,10 @@
-# venues/urls.py
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
-app_name = 'venues'
+router = DefaultRouter()
+router.register(r'', views.VenueViewSet, basename='venue')
 
 urlpatterns = [
-    path('', views.VenueListView.as_view(), name='list'),
-    path('dashboard/', views.VenueDashboardView.as_view(), name='dashboard'),
-    path('<str:pk>/', views.VenueDetailView.as_view(), name='detail'),  # This should be last
+    path('', include(router.urls)),
 ]
